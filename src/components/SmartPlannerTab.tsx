@@ -3,6 +3,7 @@ import { AssignToControl } from "./AssignToControl";
 import { CompanyDrawer } from "./CompanyDrawer";
 import { findSalesopsOwner } from "@/lib/salesops";
 import { sortCompanies } from "@/lib/filters/engine";
+import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 
 const EXCLUDABLE_LIFECYCLE_STAGES = ["Contract Closed", "In Pipeline"];
@@ -12,12 +13,14 @@ export function SmartPlannerTab({
   owners,
   ownerMap,
   teamMap,
+  rosterOverrides,
   onReassign,
 }: {
   companies: CompanyRecord[];
   owners: OwnerRecord[];
   ownerMap: Map<string, OwnerRecord>;
   teamMap: Map<string, TeamRecord>;
+  rosterOverrides: RosterOverrideMap;
   onReassign: (companyIds: string[], newOwnerId: string) => Promise<void>;
 }) {
   const salesopsOwner = useMemo(() => findSalesopsOwner(owners), [owners]);
@@ -220,7 +223,13 @@ export function SmartPlannerTab({
         </table>
       </div>
 
-      <CompanyDrawer company={selectedCompany} owners={ownerMap} teams={teamMap} onClose={() => setSelectedCompany(null)} />
+      <CompanyDrawer
+        company={selectedCompany}
+        owners={ownerMap}
+        teams={teamMap}
+        rosterOverrides={rosterOverrides}
+        onClose={() => setSelectedCompany(null)}
+      />
     </div>
   );
 }

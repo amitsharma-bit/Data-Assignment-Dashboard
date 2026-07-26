@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { clearAllData, getAllCompanies, getAllOwners, getAllTeams, getMeta } from "@/lib/db";
 import { runSync, type SyncProgress } from "@/lib/hubspot/sync";
 import { reassignCompanies as reassignCompaniesInHubspot } from "@/lib/hubspot/mutate";
+import {
+  loadRosterOverrides,
+  removeRosterOverride as removeRosterOverrideInDb,
+  saveRosterOverride as saveRosterOverrideInDb,
+  type RosterOverride,
+  type RosterOverrideMap,
+} from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 
 export function useAppData() {
@@ -9,6 +16,7 @@ export function useAppData() {
   const [owners, setOwners] = useState<OwnerRecord[]>([]);
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [rosterOverrides, setRosterOverrides] = useState<RosterOverrideMap>({});
 
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
@@ -19,16 +27,18 @@ export function useAppData() {
   const [reassignError, setReassignError] = useState<string | null>(null);
 
   const loadFromLocalCache = useCallback(async () => {
-    const [c, o, t, ts] = await Promise.all([
+    const [c, o, t, ts, overrides] = await Promise.all([
       getAllCompanies(),
       getAllOwners(),
       getAllTeams(),
       getMeta<string>("lastSyncedAt"),
+      loadRosterOverrides(),
     ]);
     setCompanies(c);
     setOwners(o);
     setTeams(t);
     setLastSyncedAt(ts ?? null);
+    setRosterOverrides(overrides);
     setLoaded(true);
   }, []);
 
@@ -76,6 +86,16 @@ export function useAppData() {
     [loadFromLocalCache],
   );
 
+  const saveRosterOverride = useCallback(async (override: RosterOverride) => {
+    const next = await saveRosterOverrideInDb(override);
+    setRosterOverrides(next);
+  }, []);
+
+  const removeRosterOverride = useCallback(async (ownerId: string) => {
+    const next = await removeRosterOverrideInDb(ownerId);
+    setRosterOverrides(next);
+  }, []);
+
   const ownerMap = useMemo(() => new Map(owners.map((o) => [o.id, o])), [owners]);
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
 
@@ -95,6 +115,9 @@ export function useAppData() {
     reassigning,
     reassignError,
     reassignCompanies,
+    rosterOverrides,
+    saveRosterOverride,
+    removeRosterOverride,
   };
 }
 

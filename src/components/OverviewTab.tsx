@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Leaderboard } from "./Leaderboard";
 import { CompanyDrawer } from "./CompanyDrawer";
 import { getDistinctPods, podForOwner, roleForOwner } from "@/lib/pods";
+import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, OwnerRole, TeamRecord } from "@/lib/types";
 
 type RoleFilter = "All" | OwnerRole;
@@ -10,12 +11,14 @@ export function OverviewTab({
   companies,
   ownerMap,
   teamMap,
+  rosterOverrides,
 }: {
   companies: CompanyRecord[];
   ownerMap: Map<string, OwnerRecord>;
   teamMap: Map<string, TeamRecord>;
+  rosterOverrides: RosterOverrideMap;
 }) {
-  const pods = useMemo(() => getDistinctPods(), []);
+  const pods = useMemo(() => getDistinctPods(rosterOverrides), [rosterOverrides]);
 
   const [selectedPod, setSelectedPod] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -25,16 +28,16 @@ export function OverviewTab({
   const scopedCompanies = useMemo(
     () =>
       companies.filter((c) => {
-        const pod = podForOwner(c.ownerId, ownerMap);
+        const pod = podForOwner(c.ownerId, ownerMap, rosterOverrides);
         return selectedPod ? pod === selectedPod : pod !== null;
       }),
-    [companies, selectedPod, ownerMap],
+    [companies, selectedPod, ownerMap, rosterOverrides],
   );
 
   const visible = useMemo(() => {
     let rows = scopedCompanies;
     if (roleFilter !== "All") {
-      rows = rows.filter((c) => roleForOwner(c.ownerId, ownerMap) === roleFilter);
+      rows = rows.filter((c) => roleForOwner(c.ownerId, ownerMap, rosterOverrides) === roleFilter);
     }
     if (search.trim()) {
       const needle = search.trim().toLowerCase();
@@ -43,13 +46,20 @@ export function OverviewTab({
       );
     }
     return rows;
-  }, [scopedCompanies, roleFilter, search, ownerMap]);
+  }, [scopedCompanies, roleFilter, search, ownerMap, rosterOverrides]);
 
   return (
     <div className="mx-auto max-w-7xl p-6">
       <h1 className="mb-4 text-xl font-semibold">Overview</h1>
 
-      <Leaderboard pods={pods} companies={companies} ownersById={ownerMap} selectedPod={selectedPod} onSelectPod={setSelectedPod} />
+      <Leaderboard
+        pods={pods}
+        companies={companies}
+        ownersById={ownerMap}
+        rosterOverrides={rosterOverrides}
+        selectedPod={selectedPod}
+        onSelectPod={setSelectedPod}
+      />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
@@ -112,7 +122,13 @@ export function OverviewTab({
         </>
       )}
 
-      <CompanyDrawer company={selectedCompany} owners={ownerMap} teams={teamMap} onClose={() => setSelectedCompany(null)} />
+      <CompanyDrawer
+        company={selectedCompany}
+        owners={ownerMap}
+        teams={teamMap}
+        rosterOverrides={rosterOverrides}
+        onClose={() => setSelectedCompany(null)}
+      />
     </div>
   );
 }

@@ -2,15 +2,17 @@ import { useState } from "react";
 import { OverviewTab } from "./components/OverviewTab";
 import { DataAssignmentTab } from "./components/DataAssignmentTab";
 import { SmartPlannerTab } from "./components/SmartPlannerTab";
+import { AdminControlCenter } from "./components/AdminControlCenter";
 import { useAppData } from "./hooks/useAppData";
 import { getAccessKey, setAccessKey } from "@/lib/hubspot/proxyClient";
 
-type Tab = "overview" | "assignment" | "planner";
+type Tab = "overview" | "assignment" | "planner" | "admin";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "assignment", label: "Data Assignment" },
   { key: "planner", label: "Smart Assignment Planner" },
+  { key: "admin", label: "Admin · Control Center" },
 ];
 
 export default function App() {
@@ -113,7 +115,12 @@ export default function App() {
       ) : (
         <>
           {tab === "overview" && (
-            <OverviewTab companies={data.companies} ownerMap={data.ownerMap} teamMap={data.teamMap} />
+            <OverviewTab
+              companies={data.companies}
+              ownerMap={data.ownerMap}
+              teamMap={data.teamMap}
+              rosterOverrides={data.rosterOverrides}
+            />
           )}
           {tab === "assignment" && (
             <DataAssignmentTab
@@ -121,6 +128,7 @@ export default function App() {
               owners={data.owners}
               ownerMap={data.ownerMap}
               teamMap={data.teamMap}
+              rosterOverrides={data.rosterOverrides}
               onReassign={data.reassignCompanies}
             />
           )}
@@ -130,7 +138,16 @@ export default function App() {
               owners={data.owners}
               ownerMap={data.ownerMap}
               teamMap={data.teamMap}
+              rosterOverrides={data.rosterOverrides}
               onReassign={data.reassignCompanies}
+            />
+          )}
+          {tab === "admin" && (
+            <AdminControlCenter
+              owners={data.owners}
+              rosterOverrides={data.rosterOverrides}
+              onSave={data.saveRosterOverride}
+              onRemove={data.removeRosterOverride}
             />
           )}
         </>

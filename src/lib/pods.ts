@@ -1,3 +1,4 @@
+import type { RosterOverrideMap } from "./rosterOverrides";
 import type { OwnerRecord, OwnerRole } from "./types";
 
 export interface RosterEntry {
@@ -16,9 +17,19 @@ export interface RosterEntry {
  * (Settings > Users) and correct it here — the roster's display name isn't
  * always what HubSpot has on file (e.g. "Namrata Sharma" below was
  * originally listed as "Nam Harrison").
+ *
+ * This static list is the seed/fallback only — anything set via the Admin
+ * Control Center tab is stored as a RosterOverride (src/lib/rosterOverrides.ts)
+ * and takes precedence over what's here. Edit this file only for baseline
+ * corrections; day-to-day pod changes should go through that tab instead.
+ *
+ * The "Shashank" pod was retired (Shashank is no longer in the system).
+ * Its former members were redistributed: Vans K -> Neelima, Ankur Patel ->
+ * Saarthak. Mayank Joshi wasn't given a new pod, so he's Unassigned until
+ * reassigned via Admin Control Center.
  */
 export const POD_ROSTER: RosterEntry[] = [
-  { name: "Ankur Patel", role: "AE", pod: "Shashank" },
+  { name: "Ankur Patel", role: "AE", pod: "Saarthak" },
   { name: "Anmol Sehgal", role: "AE", pod: "Archit" },
   { name: "Archit Gupta", role: "AE", pod: "Archit" },
   { name: "Arun Divya Prakash", role: "AE", pod: "Neelima" },
@@ -26,13 +37,13 @@ export const POD_ROSTER: RosterEntry[] = [
   { name: "Jatin Arora", role: "AE", pod: "Neelima" },
   { name: "Jay Berry", role: "AE", pod: "Saarthak" },
   { name: "Liam Fallon", role: "AE", pod: "Archit" },
-  { name: "Mayank Joshi", role: "AE", pod: "Shashank" },
+  { name: "Mayank Joshi", role: "AE", pod: null },
   { name: "Neelima Tiwari", role: "AE", pod: "Neelima" },
   { name: "Pallav Pandey", role: "AE", pod: "Neelima" },
   { name: "Prince Arora", role: "AE", pod: "Prince" },
   { name: "Saurabh Nawale", role: "AE", pod: "Prince" },
   { name: "Shivam Ahuja", role: "AE", pod: "Saarthak" },
-  { name: "Vans K", role: "AE", pod: "Shashank" },
+  { name: "Vans K", role: "AE", pod: "Neelima" },
 
   { name: "Abhishek Bhattacharyya", role: "SDR", pod: null },
   { name: "Angad Bawa", role: "SDR", pod: "Prince" },
@@ -68,7 +79,7 @@ export const POD_ROSTER: RosterEntry[] = [
 ];
 
 /** Display order for the leaderboard, matching the "AE Pods" panel. */
-export const POD_ORDER = ["Saarthak", "Neelima", "Archit", "Prince", "Central", "Shashank"];
+export const POD_ORDER = ["Saarthak", "Neelima", "Archit", "Prince", "Central"];
 
 function normalize(name: string): string {
   return name.toLowerCase().replace(/\s+/g, " ").trim();
@@ -81,19 +92,34 @@ function rosterEntryForOwnerName(name: string | null | undefined): RosterEntry |
   return ROSTER_BY_NAME.get(normalize(name));
 }
 
-export function podForOwner(ownerId: string | null | undefined, ownersById: Map<string, OwnerRecord>): string | null {
+export function podForOwner(
+  ownerId: string | null | undefined,
+  ownersById: Map<string, OwnerRecord>,
+  overrides: RosterOverrideMap = {},
+): string | null {
   if (!ownerId) return null;
+  const override = overrides[ownerId];
+  if (override) return override.pod;
   return rosterEntryForOwnerName(ownersById.get(ownerId)?.name)?.pod ?? null;
 }
 
-export function roleForOwner(ownerId: string | null | undefined, ownersById: Map<string, OwnerRecord>): OwnerRole | null {
+export function roleForOwner(
+  ownerId: string | null | undefined,
+  ownersById: Map<string, OwnerRecord>,
+  overrides: RosterOverrideMap = {},
+): OwnerRole | null {
   if (!ownerId) return null;
+  const override = overrides[ownerId];
+  if (override) return override.role;
   return rosterEntryForOwnerName(ownersById.get(ownerId)?.name)?.role ?? null;
 }
 
-/** All pods that actually have at least one roster member, in display order. */
-export function getDistinctPods(): string[] {
+/** All pods that actually have at least one member, in display order. */
+export function getDistinctPods(overrides: RosterOverrideMap = {}): string[] {
   const present = new Set(POD_ROSTER.map((r) => r.pod).filter((p): p is string => Boolean(p)));
+  for (const override of Object.values(overrides)) {
+    if (override.pod) present.add(override.pod);
+  }
   const ordered = POD_ORDER.filter((p) => present.has(p));
   const extra = [...present].filter((p) => !POD_ORDER.includes(p)).sort();
   return [...ordered, ...extra];

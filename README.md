@@ -9,10 +9,9 @@ HubSpot to actually change Company owner. No database, no login system.
 
 ### Overview
 A leaderboard for the **AE Pods** (Saarthak, Neelima, Archit, Prince,
-Central, Shashank) — a real org structure that has nothing to do with
-HubSpot's own Teams feature. Pod membership and SDR/AE role come from a
-hardcoded roster in `src/lib/pods.ts`, matched against synced HubSpot
-owner names. Each pod card shows:
+Central, plus any pods created via Admin Control Center) — a real org
+structure that has nothing to do with HubSpot's own Teams feature. Each
+pod card shows:
 - Total Group Dealerships (distinct GDs, not raw company records)
 - Total Single Accounts
 - Total Companies — the sum of each GD's `#Potential Rooftops` plus the
@@ -20,17 +19,28 @@ owner names. Each pod card shows:
   number of HubSpot records
 
 Click a pod card to see its accounts below, with a search box and an
-[All]/[SDR]/[AE] filter driven by that same roster (no manual tagging —
-it's ground truth, not a local guess).
+[All]/[SDR]/[AE] filter.
 
-**Keeping the roster current**: `src/lib/pods.ts` is a plain data file, not
-a database — when someone joins/leaves/switches pods, edit the
-`POD_ROSTER` array there and redeploy. Matching is name-based
-(case/whitespace-insensitive); anyone whose name doesn't match a synced
-HubSpot owner exactly falls back to "Unassigned" rather than silently
-disappearing from the count. A couple of known mismatches: the roster says
-"Name Harrison" where HubSpot's owner record is "Nam Harrison" — fix
-typos like that directly in the roster if they turn up.
+Pod membership and SDR/AE role resolve in two layers: a baseline static
+roster in `src/lib/pods.ts` (matched by owner *name*, so it can go stale),
+overridden by anything set in the **Admin · Control Center** tab (matched
+by owner *id*, set by picking a real person from a dropdown — this is the
+one to use day-to-day; see below).
+
+### Admin · Control Center
+Assign or change anyone's pod and role from the dashboard itself — no code
+edit, no redeploy. Pick a person from a dropdown of actual synced HubSpot
+owners (so the id is always correct), set their role and pod, save. The
+table below shows every synced owner's resolved pod/role and whether it
+came from a custom assignment ("Custom") or the static roster fallback
+("Roster default"), with **Revert** to drop a custom assignment back to
+whatever the roster says. Stored in this browser's IndexedDB
+(`src/lib/rosterOverrides.ts`) — see the tradeoffs note below.
+
+**The static roster** (`src/lib/pods.ts`) is only the fallback/seed data
+now — anyone whose name doesn't match a synced HubSpot owner falls back to
+"Unassigned" rather than silently disappearing from the count, but the
+fix for that going forward is the Admin tab, not editing this file.
 
 ### Data Assignment
 Scoped to companies currently owned by **"Salesops ."** — the pool waiting
@@ -76,9 +86,13 @@ prefixes — batch update/read are covered by the existing
   Function holding `HUBSPOT_ACCESS_TOKEN` and forwarding whitelisted
   requests (HubSpot doesn't allow direct browser calls with a private-app
   token — no CORS headers — so this is the minimum possible server piece).
-- **No database**: synced companies/owners/teams live in this browser's
-  IndexedDB (`src/lib/db.ts`). Pod/role assignment is a static roster
-  checked into the repo (`src/lib/pods.ts`), not user data.
+- **No database**: synced companies/owners/teams, and any pod/role
+  overrides set via Admin Control Center, all live in this browser's
+  IndexedDB (`src/lib/db.ts`). That means pod assignments made in one
+  browser don't show up in another — single-browser use as currently set
+  up. If that becomes a real problem (e.g. more than one person needs to
+  manage the roster), that's the point where a shared backend would earn
+  its keep.
 - **No login system**: single-browser use as currently set up.
 
 ## Setup

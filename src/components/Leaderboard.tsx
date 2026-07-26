@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { CompanyRecord, OwnerRecord } from "@/lib/types";
 import { groupByGD } from "@/lib/gdGrouping";
 import { podForOwner } from "@/lib/pods";
+import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 
 interface PodStats {
   pod: string;
@@ -10,8 +11,13 @@ interface PodStats {
   totalCompanies: number;
 }
 
-function statsForPod(pod: string, companies: CompanyRecord[], ownersById: Map<string, OwnerRecord>): PodStats {
-  const podCompanies = companies.filter((c) => podForOwner(c.ownerId, ownersById) === pod);
+function statsForPod(
+  pod: string,
+  companies: CompanyRecord[],
+  ownersById: Map<string, OwnerRecord>,
+  overrides: RosterOverrideMap,
+): PodStats {
+  const podCompanies = companies.filter((c) => podForOwner(c.ownerId, ownersById, overrides) === pod);
   const gdGroups = groupByGD(podCompanies);
   const singleCompanies = podCompanies.filter((c) => c.isGroupDealership !== true);
 
@@ -29,16 +35,21 @@ export function Leaderboard({
   pods,
   companies,
   ownersById,
+  rosterOverrides,
   selectedPod,
   onSelectPod,
 }: {
   pods: string[];
   companies: CompanyRecord[];
   ownersById: Map<string, OwnerRecord>;
+  rosterOverrides: RosterOverrideMap;
   selectedPod: string | null;
   onSelectPod: (pod: string | null) => void;
 }) {
-  const stats = useMemo(() => pods.map((p) => statsForPod(p, companies, ownersById)), [pods, companies, ownersById]);
+  const stats = useMemo(
+    () => pods.map((p) => statsForPod(p, companies, ownersById, rosterOverrides)),
+    [pods, companies, ownersById, rosterOverrides],
+  );
 
   return (
     <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
