@@ -113,7 +113,7 @@ export default function App() {
       ) : (
         <>
           {tab === "overview" && (
-            <OverviewTab companies={data.companies} owners={data.owners} teams={data.teams} ownerMap={data.ownerMap} teamMap={data.teamMap} />
+            <OverviewTab companies={data.companies} ownerMap={data.ownerMap} teamMap={data.teamMap} />
           )}
           {tab === "assignment" && (
             <DataAssignmentTab

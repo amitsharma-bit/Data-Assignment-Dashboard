@@ -1,0 +1,99 @@
+import type { OwnerRecord, OwnerRole } from "./types";
+
+export interface RosterEntry {
+  name: string;
+  role: OwnerRole;
+  pod: string | null; // null = unassigned ("—" in the source roster)
+}
+
+/**
+ * The real account-grouping structure ("AE Pods") — distinct from HubSpot's
+ * built-in Teams feature, which isn't used for this at all. Pulled
+ * verbatim from the roster Amit provided; names are matched against synced
+ * HubSpot owner names (trim/case-insensitive). A couple of names are known
+ * to differ slightly from HubSpot's own records (e.g. this roster says
+ * "Name Harrison" where HubSpot has the owner as "Nam Harrison") — anyone
+ * who doesn't match shows up as "Unassigned" rather than silently
+ * disappearing, and can be fixed by correcting the name below.
+ */
+export const POD_ROSTER: RosterEntry[] = [
+  { name: "Ankur Patel", role: "AE", pod: "Shashank" },
+  { name: "Anmol Sehgal", role: "AE", pod: "Archit" },
+  { name: "Archit Gupta", role: "AE", pod: "Archit" },
+  { name: "Arun Divya Prakash", role: "AE", pod: "Neelima" },
+  { name: "Jace Larsen", role: "AE", pod: "Archit" },
+  { name: "Jatin Arora", role: "AE", pod: "Neelima" },
+  { name: "Jay Berry", role: "AE", pod: "Saarthak" },
+  { name: "Liam Fallon", role: "AE", pod: "Archit" },
+  { name: "Mayank Joshi", role: "AE", pod: "Shashank" },
+  { name: "Neelima Tiwari", role: "AE", pod: "Neelima" },
+  { name: "Pallav Pandey", role: "AE", pod: "Neelima" },
+  { name: "Prince Arora", role: "AE", pod: "Prince" },
+  { name: "Saurabh Nawale", role: "AE", pod: "Prince" },
+  { name: "Shivam Ahuja", role: "AE", pod: "Saarthak" },
+  { name: "Vans K", role: "AE", pod: "Shashank" },
+
+  { name: "Abhishek Bhattacharyya", role: "SDR", pod: null },
+  { name: "Angad Bawa", role: "SDR", pod: "Prince" },
+  { name: "Animesh Anand", role: "SDR", pod: "Central" },
+  { name: "Anisha Jaiswal", role: "SDR", pod: "Neelima" },
+  { name: "Ashish Baweja", role: "SDR", pod: "Saarthak" },
+  { name: "Divyansh Gupta", role: "SDR", pod: "Prince" },
+  { name: "Drishti Aggarwal", role: "SDR", pod: "Archit" },
+  { name: "Gagandeep Kaur", role: "SDR", pod: null },
+  { name: "Jayant Trivedi", role: "SDR", pod: "Archit" },
+  { name: "Ketan Srivastava", role: "SDR", pod: "Prince" },
+  { name: "Khubaib Akram Khan", role: "SDR", pod: "Prince" },
+  { name: "Kreeti Chhabra", role: "SDR", pod: null },
+  { name: "Kshitij Agarwal", role: "SDR", pod: "Neelima" },
+  { name: "Lakshya Gaurh", role: "SDR", pod: null },
+  { name: "Name Harrison", role: "SDR", pod: null }, // HubSpot: "Nam Harrison"
+  { name: "Palak Narula", role: "SDR", pod: "Prince" },
+  { name: "Prabhjeet Kaur", role: "SDR", pod: "Saarthak" },
+  { name: "Priyanka Sambyal", role: "SDR", pod: "Neelima" },
+  { name: "Rajveer Singh", role: "SDR", pod: "Archit" },
+  { name: "Rishabh Sharma", role: "SDR", pod: null },
+  { name: "Sanamdeep .", role: "SDR", pod: "Archit" },
+  { name: "Shadman Khalid", role: "SDR", pod: "Central" },
+  { name: "Shikhar Paroha", role: "SDR", pod: "Neelima" },
+  { name: "Shubham Singha.", role: "SDR", pod: "Neelima" },
+  { name: "Simran Grover", role: "SDR", pod: "Neelima" },
+  { name: "Sourav Singh", role: "SDR", pod: "Central" },
+  { name: "utsav Yadav", role: "SDR", pod: "Neelima" },
+  { name: "Vaansh Sharma", role: "SDR", pod: "Archit" },
+  { name: "Vaibhav Kumar", role: "SDR", pod: null },
+  { name: "Vikram Choudhary", role: "SDR", pod: "Saarthak" },
+  { name: "Viplove Tyagi", role: "SDR", pod: null },
+];
+
+/** Display order for the leaderboard, matching the "AE Pods" panel. */
+export const POD_ORDER = ["Saarthak", "Neelima", "Archit", "Prince", "Central", "Shashank"];
+
+function normalize(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+const ROSTER_BY_NAME = new Map(POD_ROSTER.map((entry) => [normalize(entry.name), entry]));
+
+function rosterEntryForOwnerName(name: string | null | undefined): RosterEntry | undefined {
+  if (!name) return undefined;
+  return ROSTER_BY_NAME.get(normalize(name));
+}
+
+export function podForOwner(ownerId: string | null | undefined, ownersById: Map<string, OwnerRecord>): string | null {
+  if (!ownerId) return null;
+  return rosterEntryForOwnerName(ownersById.get(ownerId)?.name)?.pod ?? null;
+}
+
+export function roleForOwner(ownerId: string | null | undefined, ownersById: Map<string, OwnerRecord>): OwnerRole | null {
+  if (!ownerId) return null;
+  return rosterEntryForOwnerName(ownersById.get(ownerId)?.name)?.role ?? null;
+}
+
+/** All pods that actually have at least one roster member, in display order. */
+export function getDistinctPods(): string[] {
+  const present = new Set(POD_ROSTER.map((r) => r.pod).filter((p): p is string => Boolean(p)));
+  const ordered = POD_ORDER.filter((p) => present.has(p));
+  const extra = [...present].filter((p) => !POD_ORDER.includes(p)).sort();
+  return [...ordered, ...extra];
+}

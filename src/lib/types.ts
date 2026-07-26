@@ -60,8 +60,5 @@ export interface TeamRecord {
   name: string | null;
 }
 
-// Two tags only, matching the Overview tab's [All]-[SDR]-[AE] filter —
-// "AE" covers AE/Manager as one bucket.
+// Ground truth from the AE Pod roster (src/lib/pods.ts), not a local guess.
 export type OwnerRole = "SDR" | "AE";
-
-export type OwnerRoleMap = Record<string, OwnerRole>;

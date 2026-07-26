@@ -8,18 +8,29 @@ HubSpot to actually change Company owner. No database, no login system.
 ## Tabs
 
 ### Overview
-A leaderboard for the four sales teams (Neelima, Archit, Prince, Saarthak —
-matched by name against whatever teams exist in HubSpot), each showing:
+A leaderboard for the **AE Pods** (Saarthak, Neelima, Archit, Prince,
+Central, Shashank) — a real org structure that has nothing to do with
+HubSpot's own Teams feature. Pod membership and SDR/AE role come from a
+hardcoded roster in `src/lib/pods.ts`, matched against synced HubSpot
+owner names. Each pod card shows:
 - Total Group Dealerships (distinct GDs, not raw company records)
 - Total Single Accounts
 - Total Companies — the sum of each GD's `#Potential Rooftops` plus the
   single-account count, i.e. the real addressable footprint, not just the
   number of HubSpot records
 
-Click a team card to see its accounts below, with a search box and an
-[All]/[SDR]/[AE] filter. Owner → role tags (SDR vs AE/Manager) are set via
-**Manage team roles** and stored in this browser only — HubSpot has no
-clean structured field for this, so it's tracked locally.
+Click a pod card to see its accounts below, with a search box and an
+[All]/[SDR]/[AE] filter driven by that same roster (no manual tagging —
+it's ground truth, not a local guess).
+
+**Keeping the roster current**: `src/lib/pods.ts` is a plain data file, not
+a database — when someone joins/leaves/switches pods, edit the
+`POD_ROSTER` array there and redeploy. Matching is name-based
+(case/whitespace-insensitive); anyone whose name doesn't match a synced
+HubSpot owner exactly falls back to "Unassigned" rather than silently
+disappearing from the count. A couple of known mismatches: the roster says
+"Name Harrison" where HubSpot's owner record is "Nam Harrison" — fix
+typos like that directly in the roster if they turn up.
 
 ### Data Assignment
 Scoped to companies currently owned by **"Salesops ."** — the pool waiting
@@ -65,8 +76,9 @@ prefixes — batch update/read are covered by the existing
   Function holding `HUBSPOT_ACCESS_TOKEN` and forwarding whitelisted
   requests (HubSpot doesn't allow direct browser calls with a private-app
   token — no CORS headers — so this is the minimum possible server piece).
-- **No database**: synced companies/owners/teams, plus locally-set owner
-  role tags, all live in this browser's IndexedDB (`src/lib/db.ts`).
+- **No database**: synced companies/owners/teams live in this browser's
+  IndexedDB (`src/lib/db.ts`). Pod/role assignment is a static roster
+  checked into the repo (`src/lib/pods.ts`), not user data.
 - **No login system**: single-browser use as currently set up.
 
 ## Setup
@@ -104,9 +116,11 @@ few mappings are best guesses rather than verified:
   fix it in `src/lib/hubspot/mapping.ts` + `src/lib/filters/fields.ts`.
 - **GD Last Activity** — mapped to `rooftop_last_activity`, which *was*
   confirmed earlier against the live portal.
-- **HubSpot teams endpoint** (`/settings/v3/users/teams`) — if it 404s or
-  returns an unexpected shape, team sync fails soft (console error) and
-  the Overview leaderboard will show "teams not found" instead of crashing.
+- **HubSpot teams endpoint** (`/settings/v3/users/teams`) — still synced
+  and shown in the company detail drawer ("HubSpot team"), but no longer
+  used for the Overview leaderboard (that's pod-based now, see above). If
+  it 404s or returns an unexpected shape, sync fails soft (console error)
+  rather than blocking company sync.
 - **Total cars**: prefers `total_cars_in_inventory`, falls back to
   `total_cars` — both exist in the portal.
 - `oem_name` exists but is labeled "not to use"; `oem_s` is used instead.

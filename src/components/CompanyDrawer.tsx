@@ -1,3 +1,4 @@
+import { podForOwner, roleForOwner } from "@/lib/pods";
 import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -40,6 +41,8 @@ export function CompanyDrawer({
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Company owner" value={owners.get(company.ownerId ?? "")?.name ?? company.ownerId} />
+          <Field label="Sales pod" value={podForOwner(company.ownerId, owners) ?? "Unassigned"} />
+          <Field label="Owner role" value={roleForOwner(company.ownerId, owners) ?? "—"} />
           <Field label="HubSpot team" value={teams.get(company.teamId ?? "")?.name ?? company.teamId} />
           <Field label="Website status" value={company.websiteStatus} />
           <Field label="GD name" value={company.gdName} />

@@ -1,48 +1,40 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Leaderboard } from "./Leaderboard";
 import { CompanyDrawer } from "./CompanyDrawer";
-import { getSalesTeams } from "@/lib/teams";
-import { loadOwnerRoles, roleOf, saveOwnerRoles } from "@/lib/ownerRoles";
-import type { CompanyRecord, OwnerRecord, OwnerRole, OwnerRoleMap, TeamRecord } from "@/lib/types";
+import { getDistinctPods, podForOwner, roleForOwner } from "@/lib/pods";
+import type { CompanyRecord, OwnerRecord, OwnerRole, TeamRecord } from "@/lib/types";
 
 type RoleFilter = "All" | OwnerRole;
 
 export function OverviewTab({
   companies,
-  owners,
-  teams,
   ownerMap,
   teamMap,
 }: {
   companies: CompanyRecord[];
-  owners: OwnerRecord[];
-  teams: TeamRecord[];
   ownerMap: Map<string, OwnerRecord>;
   teamMap: Map<string, TeamRecord>;
 }) {
-  const salesTeams = useMemo(() => getSalesTeams(teams), [teams]);
-  const salesTeamIds = useMemo(() => new Set(salesTeams.map((t) => t.id)), [salesTeams]);
+  const pods = useMemo(() => getDistinctPods(), []);
 
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedPod, setSelectedPod] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("All");
-  const [ownerRoles, setOwnerRoles] = useState<OwnerRoleMap>({});
-  const [showRoleManager, setShowRoleManager] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
 
-  useEffect(() => {
-    loadOwnerRoles().then(setOwnerRoles);
-  }, []);
-
   const scopedCompanies = useMemo(
-    () => companies.filter((c) => (selectedTeamId ? c.teamId === selectedTeamId : c.teamId && salesTeamIds.has(c.teamId))),
-    [companies, selectedTeamId, salesTeamIds],
+    () =>
+      companies.filter((c) => {
+        const pod = podForOwner(c.ownerId, ownerMap);
+        return selectedPod ? pod === selectedPod : pod !== null;
+      }),
+    [companies, selectedPod, ownerMap],
   );
 
   const visible = useMemo(() => {
     let rows = scopedCompanies;
     if (roleFilter !== "All") {
-      rows = rows.filter((c) => roleOf(c.ownerId, ownerRoles) === roleFilter);
+      rows = rows.filter((c) => roleForOwner(c.ownerId, ownerMap) === roleFilter);
     }
     if (search.trim()) {
       const needle = search.trim().toLowerCase();
@@ -51,24 +43,13 @@ export function OverviewTab({
       );
     }
     return rows;
-  }, [scopedCompanies, roleFilter, search, ownerRoles]);
-
-  const ownersInScope = useMemo(() => {
-    const ids = new Set(scopedCompanies.map((c) => c.ownerId).filter((id): id is string => Boolean(id)));
-    return owners.filter((o) => ids.has(o.id)).sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
-  }, [scopedCompanies, owners]);
-
-  async function updateRole(ownerId: string, role: OwnerRole) {
-    const next = { ...ownerRoles, [ownerId]: role };
-    setOwnerRoles(next);
-    await saveOwnerRoles(next);
-  }
+  }, [scopedCompanies, roleFilter, search, ownerMap]);
 
   return (
     <div className="mx-auto max-w-7xl p-6">
       <h1 className="mb-4 text-xl font-semibold">Overview</h1>
 
-      <Leaderboard teams={salesTeams} companies={companies} selectedTeamId={selectedTeamId} onSelectTeam={setSelectedTeamId} />
+      <Leaderboard pods={pods} companies={companies} ownersById={ownerMap} selectedPod={selectedPod} onSelectPod={setSelectedPod} />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
@@ -88,39 +69,11 @@ export function OverviewTab({
             </button>
           ))}
         </div>
-        <button onClick={() => setShowRoleManager((v) => !v)} className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100">
-          Manage team roles
-        </button>
       </div>
 
-      {showRoleManager && (
-        <div className="mb-4 rounded-lg border bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold">Owner tags</h2>
-          <p className="mb-3 text-xs text-gray-500">
-            Tag each owner as SDR or AE/Manager — used by the filter buttons above. Stored in this browser only.
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {ownersInScope.map((owner) => (
-              <div key={owner.id} className="flex items-center justify-between gap-2 rounded border px-2 py-1">
-                <span className="truncate text-sm">{owner.name ?? owner.id}</span>
-                <select
-                  className="rounded border px-1 py-0.5 text-xs"
-                  value={roleOf(owner.id, ownerRoles)}
-                  onChange={(e) => updateRole(owner.id, e.target.value as OwnerRole)}
-                >
-                  <option value="AE">AE/Manager</option>
-                  <option value="SDR">SDR</option>
-                </select>
-              </div>
-            ))}
-            {ownersInScope.length === 0 && <p className="text-sm text-gray-400">No owners in scope yet.</p>}
-          </div>
-        </div>
-      )}
-
-      {!selectedTeamId && !search.trim() ? (
+      {!selectedPod && !search.trim() ? (
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-gray-500">
-          Select a team above, or search, to see accounts.
+          Select a pod above, or search, to see accounts.
         </div>
       ) : (
         <>

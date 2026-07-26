@@ -1,23 +1,24 @@
 import { useMemo } from "react";
-import type { CompanyRecord, TeamRecord } from "@/lib/types";
+import type { CompanyRecord, OwnerRecord } from "@/lib/types";
 import { groupByGD } from "@/lib/gdGrouping";
+import { podForOwner } from "@/lib/pods";
 
-interface TeamStats {
-  team: TeamRecord;
+interface PodStats {
+  pod: string;
   gdCount: number;
   singleCount: number;
   totalCompanies: number;
 }
 
-function statsForTeam(team: TeamRecord, companies: CompanyRecord[]): TeamStats {
-  const teamCompanies = companies.filter((c) => c.teamId === team.id);
-  const gdGroups = groupByGD(teamCompanies);
-  const singleCompanies = teamCompanies.filter((c) => c.isGroupDealership !== true);
+function statsForPod(pod: string, companies: CompanyRecord[], ownersById: Map<string, OwnerRecord>): PodStats {
+  const podCompanies = companies.filter((c) => podForOwner(c.ownerId, ownersById) === pod);
+  const gdGroups = groupByGD(podCompanies);
+  const singleCompanies = podCompanies.filter((c) => c.isGroupDealership !== true);
 
   const rooftopTotal = gdGroups.reduce((sum, g) => sum + (g.potentialRooftops ?? g.companies.length), 0);
 
   return {
-    team,
+    pod,
     gdCount: gdGroups.length,
     singleCount: singleCompanies.length,
     totalCompanies: rooftopTotal + singleCompanies.length,
@@ -25,40 +26,33 @@ function statsForTeam(team: TeamRecord, companies: CompanyRecord[]): TeamStats {
 }
 
 export function Leaderboard({
-  teams,
+  pods,
   companies,
-  selectedTeamId,
-  onSelectTeam,
+  ownersById,
+  selectedPod,
+  onSelectPod,
 }: {
-  teams: TeamRecord[];
+  pods: string[];
   companies: CompanyRecord[];
-  selectedTeamId: string | null;
-  onSelectTeam: (teamId: string | null) => void;
+  ownersById: Map<string, OwnerRecord>;
+  selectedPod: string | null;
+  onSelectPod: (pod: string | null) => void;
 }) {
-  const stats = useMemo(() => teams.map((t) => statsForTeam(t, companies)), [teams, companies]);
-
-  if (teams.length === 0) {
-    return (
-      <div className="mb-4 rounded-lg border border-dashed p-6 text-center text-sm text-gray-500">
-        None of the four sales teams (Neelima, Archit, Prince, Saarthak) were found yet — sync first, or check
-        team names in HubSpot match.
-      </div>
-    );
-  }
+  const stats = useMemo(() => pods.map((p) => statsForPod(p, companies, ownersById)), [pods, companies, ownersById]);
 
   return (
-    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map(({ team, gdCount, singleCount, totalCompanies }) => {
-        const selected = selectedTeamId === team.id;
+    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {stats.map(({ pod, gdCount, singleCount, totalCompanies }) => {
+        const selected = selectedPod === pod;
         return (
           <button
-            key={team.id}
-            onClick={() => onSelectTeam(selected ? null : team.id)}
+            key={pod}
+            onClick={() => onSelectPod(selected ? null : pod)}
             className={`rounded-lg border p-4 text-left transition ${
               selected ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 bg-white hover:border-gray-400"
             }`}
           >
-            <div className="mb-2 text-sm font-semibold">{team.name}</div>
+            <div className="mb-2 text-sm font-semibold">{pod}</div>
             <div className="space-y-0.5 text-xs">
               <div className={selected ? "text-gray-300" : "text-gray-500"}>
                 Group Dealerships: <span className="font-medium">{gdCount}</span>
