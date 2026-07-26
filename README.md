@@ -1,112 +1,121 @@
 # Data Assignment Dashboard
 
-Dashboard that mirrors HubSpot company data into **this browser's own local
-storage** (IndexedDB), scores every company for reassignment suitability,
-and lets you plan owner-to-owner transfers — all client-side, no database,
-no login system. Built for single-browser use; see **Architecture &
-tradeoffs** for what that choice means if you ever add teammates.
+A dashboard for assigning HubSpot company data — currently pooled under the
+"Salesops ." owner — out to sales team members. Mirrors company data into
+this browser's own local storage (IndexedDB), and can write back to
+HubSpot to actually change Company owner. No database, no login system.
 
-## What's here
+## Tabs
 
-- **Dashboard tab** — searchable, sortable, column-toggleable company table
-  with an assignability score on every row, a visual AND/OR filter builder,
-  starter + savable filter presets, a summary/KPI panel (counts by score
-  band, owner, team, lifecycle stage, website status, country), a click-in
-  detail drawer per company, and CSV export.
-- **Reassignment Planner tab** — pick a source owner, see their whole
-  portfolio bucketed into High/Medium/Low transfer confidence (derived from
-  the same scoring engine), with per-bucket or full-plan CSV export.
-- **Scoring Rules tab** — edit base points, band thresholds, hard
-  disqualifiers, and weighted signals through a form — no code changes
-  needed to change what "assignable" means.
+### Overview
+A leaderboard for the four sales teams (Neelima, Archit, Prince, Saarthak —
+matched by name against whatever teams exist in HubSpot), each showing:
+- Total Group Dealerships (distinct GDs, not raw company records)
+- Total Single Accounts
+- Total Companies — the sum of each GD's `#Potential Rooftops` plus the
+  single-account count, i.e. the real addressable footprint, not just the
+  number of HubSpot records
+
+Click a team card to see its accounts below, with a search box and an
+[All]/[SDR]/[AE] filter. Owner → role tags (SDR vs AE/Manager) are set via
+**Manage team roles** and stored in this browser only — HubSpot has no
+clean structured field for this, so it's tracked locally.
+
+### Data Assignment
+Scoped to companies currently owned by **"Salesops ."** — the pool waiting
+to be handed out. Split into:
+- **Group Dealerships Available For Assignment** — one row per distinct GD
+  (companies sharing a `gd_id`/`gd_name` are collapsed into one row), with
+  search, the full AND/OR advanced filter builder, and bulk **Assign to**.
+- **Single Companies Available For Assignment** — one row per company, with
+  search, a country quick-filter, and bulk **Assign to**.
+
+### Smart Assignment Planner
+Scans the *entire* Salesops-owned pool (single companies and GD members
+alike) against adjustable criteria and surfaces the best assignment
+candidates:
+- Minimum associated contacts (default 2)
+- Minimum used cars — manual, blank means no minimum
+- Exclude lifecycle stage (GD level): Contract Closed / In Pipeline, both on by default
+- Exclude Independent OEM (on by default)
+- Country filter
+
+Matches are sortable, selectable, and bulk-assignable via the same
+**Assign to** control as the Data Assignment tab.
+
+## This app now writes to HubSpot
+
+Every "Assign to" action calls HubSpot's batch update API to change
+`hubspot_owner_id` on the selected companies — a real, immediate change to
+live CRM data, not a local-only simulation. The UI confirms with you before
+firing (shows the count and destination owner), and afterward refetches
+those exact records from HubSpot so the local cache reflects HubSpot's own
+recomputed values rather than a guess. There's no undo beyond reassigning
+again by hand.
+
+`api/hubspot.ts` still only forwards to a fixed allowlist of HubSpot path
+prefixes — batch update/read are covered by the existing
+`/crm/v3/objects/companies` prefix, nothing new was opened up.
 
 ## Architecture
 
-- **Frontend**: static React app (Vite). Filtering, sorting, search,
-  scoring, and CSV export all run in the browser against data already
-  pulled into IndexedDB — no network calls needed once synced.
+- **Frontend**: static React app (Vite). Filtering, grouping, and search
+  run in the browser against data cached in IndexedDB.
 - **The only server-side code**: `api/hubspot.ts`, a single Vercel Edge
-  Function. Its only job is to hold `HUBSPOT_ACCESS_TOKEN` and forward
-  whitelisted requests to HubSpot — the token never reaches the browser.
-  (HubSpot's API doesn't allow direct browser calls with a private-app
-  token at all — no CORS headers — so some tiny server piece is required
-  no matter what; this is the minimum possible version of that.)
-- **No database**: "Sync now" pulls companies/owners/teams through the
-  proxy and writes them into this browser's IndexedDB. Scoring config and
-  saved filter presets live there too (`src/lib/db.ts`).
-- **No login system**: anyone who can open this browser profile can use the
-  dashboard. Fine for single-person use; see below if that ever changes.
-
-### Tradeoffs (matters if you ever add teammates)
-
-Everything here is scoped to **this one browser**:
-- Synced company data, saved filter presets, and the scoring config are all
-  stored in *this browser's* IndexedDB. A different browser or device
-  starts from zero and needs its own sync.
-- If you later want a teammate to see the same data/presets/scoring rules
-  without each of you syncing and configuring separately, that's what a
-  shared backend (a real database + real auth) buys you — worth
-  revisiting at that point, not before.
+  Function holding `HUBSPOT_ACCESS_TOKEN` and forwarding whitelisted
+  requests (HubSpot doesn't allow direct browser calls with a private-app
+  token — no CORS headers — so this is the minimum possible server piece).
+- **No database**: synced companies/owners/teams, plus locally-set owner
+  role tags, all live in this browser's IndexedDB (`src/lib/db.ts`).
+- **No login system**: single-browser use as currently set up.
 
 ## Setup
 
 ```bash
 npm install
 cp .env.local.example .env.local   # fill in HUBSPOT_ACCESS_TOKEN
-npm run dev                        # runs `vercel dev` — serves the static app AND api/hubspot.ts together
+npm run dev                        # runs `vercel dev`
 ```
 
-First run of `vercel dev` will ask to link/create a Vercel project (free
-tier is fine) — say yes, it's needed for the Edge Function to run locally
-at all. Open the printed local URL, then click **Run first sync**.
+Open the printed local URL, click **Run first sync**.
 
-### Deploying (optional — only if you want a hosted URL instead of localhost)
+### Deploying
 
 ```bash
 npm run deploy   # runs `vercel --prod`
 ```
 
-Set `HUBSPOT_ACCESS_TOKEN` (and optionally `DASHBOARD_ACCESS_KEY` for a
-lightweight shared-passphrase gate) as environment variables in the Vercel
-project's dashboard — not in a file.
+Set `HUBSPOT_ACCESS_TOKEN` (and optionally `DASHBOARD_ACCESS_KEY`) as
+environment variables in the Vercel project's dashboard, then redeploy —
+env var changes don't apply to an already-built deployment.
 
-## Using the scoring engine
+## Known open items — confirm these against your real portal
 
-Every company gets a 0-100 score from **Scoring Rules**:
-- **Hard disqualifiers** cap the score at "Poor candidate" regardless of
-  anything else (defaults: OEM is Independent, DMS is Carsforsale.Com,
-  Lifecycle stage (GD level) is In Pipeline/Contract Closed).
-- **Weighted signals** add/subtract points from a base of 50 (defaults:
-  relevant website +15, missing GD name +10, used cars in 60-200 range +15,
-  more than 2 contacts +10, US geography +5, group dealership +5).
-- Bands: 90-100 Highly assignable, 70-89 Good candidate, 40-69 Needs
-  review, 0-39 Poor candidate — thresholds are editable too.
+The HubSpot connector was unavailable while these tabs were built, so a
+few mappings are best guesses rather than verified:
 
-Every score's reasons and disqualifiers are stored and shown verbatim in
-the detail drawer and CSV export — nothing is re-derived or hidden.
-
-## Known open items (not blockers, confirm on first real sync)
-
-- **Total cars**: both `total_cars` and `total_cars_in_inventory` exist as
-  properties in the portal. `src/lib/hubspot/mapping.ts` prefers
-  `total_cars_in_inventory`, falling back to `total_cars`.
-- **Last activity date**: mapped to `notes_last_contacted` as the closest
-  standard HubSpot property — confirm this is what you mean, and adjust in
-  `src/lib/hubspot/mapping.ts` + `src/lib/filters/fields.ts` if not.
-- **HubSpot teams endpoint**: `src/lib/hubspot/sync.ts` calls
-  `/settings/v3/users/teams`. If that returns an unexpected shape for your
-  account type, team sync fails soft (console error, dashboard still works,
-  just shows raw team IDs instead of names).
-- `oem_name` exists in the portal but is labeled "not to use" and was
-  intentionally excluded in favor of `oem_s`.
+- **"Salesops ." owner** — resolved by matching the owner name (case/
+  punctuation-insensitive) rather than a hardcoded id, in
+  `src/lib/salesops.ts`. If the Data Assignment / Smart Planner tabs come
+  up empty, check the exact owner name in HubSpot contains "salesops".
+- **Dealership Rank** — mapped to a guessed property name,
+  `dealership_rank`. If that's wrong it'll just read blank for every row;
+  check Settings → Properties in HubSpot for the real internal name and
+  fix it in `src/lib/hubspot/mapping.ts` + `src/lib/filters/fields.ts`.
+- **GD Last Activity** — mapped to `rooftop_last_activity`, which *was*
+  confirmed earlier against the live portal.
+- **HubSpot teams endpoint** (`/settings/v3/users/teams`) — if it 404s or
+  returns an unexpected shape, team sync fails soft (console error) and
+  the Overview leaderboard will show "teams not found" instead of crashing.
+- **Total cars**: prefers `total_cars_in_inventory`, falls back to
+  `total_cars` — both exist in the portal.
+- `oem_name` exists but is labeled "not to use"; `oem_s` is used instead.
 
 ## Security
 
-- `HUBSPOT_ACCESS_TOKEN` must only ever live in `.env.local` (gitignored)
-  for local dev, or the Vercel project's environment variables for
-  production — never in a committed file or chat.
-- `api/hubspot.ts` only forwards to a hardcoded allowlist of HubSpot paths
-  (companies, properties, owners, teams) — it is not a general-purpose
-  proxy, specifically to avoid it being used to reach arbitrary URLs.
-- If a token is ever exposed, rotate it immediately in HubSpot under
-  Settings → Integrations → Private Apps.
+- `HUBSPOT_ACCESS_TOKEN` only ever lives in `.env.local` (gitignored) or
+  the Vercel project's environment variables — never committed or pasted
+  in chat. If a token or any credential is ever exposed, rotate it
+  immediately in HubSpot (or wherever it came from).
+- `api/hubspot.ts` forwards only to a hardcoded allowlist of HubSpot path
+  prefixes — it's not a general-purpose proxy.

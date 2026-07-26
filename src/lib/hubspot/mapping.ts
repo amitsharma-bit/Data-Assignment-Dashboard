@@ -3,12 +3,19 @@ import type { CompanyRecord } from "@/lib/types";
 
 /**
  * Property mapping confirmed against the live portal (see the original plan).
- * Two items are still open and resolved with a safe fallback rather than a
+ * A few items are still open and resolved with a safe fallback rather than a
  * guess baked in permanently:
  *  - "Total cars": both `total_cars` and `total_cars_in_inventory` exist.
  *    We prefer `total_cars_in_inventory` and fall back to `total_cars`.
  *  - "Last activity date": assumed to be `notes_last_contacted`. Confirm
  *    against the portal and adjust here if it should be a different field.
+ *  - "Dealership Rank": UNCONFIRMED — the HubSpot connector was unavailable
+ *    when this was added, so `dealership_rank` is a best guess at the
+ *    internal name, not a verified one. It'll just read as blank everywhere
+ *    if wrong — check Settings > Properties in HubSpot for the real
+ *    internal name and fix it here if so.
+ *  - "GD Last Activity": mapped to `rooftop_last_activity`, confirmed
+ *    against the portal earlier.
  */
 export const COMPANY_PROPERTIES_TO_FETCH = [
   "name",
@@ -28,6 +35,8 @@ export const COMPANY_PROPERTIES_TO_FETCH = [
   "dealership_group_name",
   "potential_rooftops",
   "number_of_rooftops_in_the_dealership_group_",
+  "dealership_rank",
+  "rooftop_last_activity",
   "num_associated_contacts",
   "num_associated_deals",
   "number_of_used_cars",
@@ -90,6 +99,8 @@ export function mapHubspotCompanyToRecord(obj: HubspotObject): CompanyRecord {
     dealershipGroupName: nonEmpty(p.dealership_group_name),
     potentialRooftops: toInt(p.potential_rooftops),
     rooftopsInGroup: toInt(p.number_of_rooftops_in_the_dealership_group_),
+    dealershipRank: nonEmpty(p.dealership_rank),
+    gdLastActivity: toIsoDate(p.rooftop_last_activity),
     numAssociatedContacts: toInt(p.num_associated_contacts),
     numAssociatedDeals: toInt(p.num_associated_deals),
     numUsedCars: toInt(p.number_of_used_cars),

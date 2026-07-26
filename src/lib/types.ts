@@ -1,5 +1,3 @@
-import type { FilterGroup } from "./filters/types";
-
 export interface CompanyRecord {
   id: string;
   name: string | null;
@@ -22,6 +20,12 @@ export interface CompanyRecord {
   dealershipGroupName: string | null;
   potentialRooftops: number | null;
   rooftopsInGroup: number | null;
+  // Best-guess mapping (dealership_rank) — unconfirmed against the live
+  // portal, see README "Known open items". Will read as null if wrong.
+  dealershipRank: string | null;
+  // "GD Last Activity" — mapped to the rooftop_last_activity property,
+  // distinct from the company-level lastActivityDate below.
+  gdLastActivity: string | null;
 
   numAssociatedContacts: number | null;
   numAssociatedDeals: number | null;
@@ -56,29 +60,8 @@ export interface TeamRecord {
   name: string | null;
 }
 
-export type ScoreBand = "highly_assignable" | "good_candidate" | "needs_review" | "poor_candidate";
+// Two tags only, matching the Overview tab's [All]-[SDR]-[AE] filter —
+// "AE" covers AE/Manager as one bucket.
+export type OwnerRole = "SDR" | "AE";
 
-export interface ScoreReason {
-  signal: string;
-  points: number;
-  description: string;
-}
-
-export interface Disqualifier {
-  name: string;
-  reason: string;
-}
-
-export interface ScoredCompany extends CompanyRecord {
-  score: number;
-  scoreBand: ScoreBand;
-  scoreReasons: ScoreReason[];
-  disqualifiers: Disqualifier[];
-}
-
-export interface SavedFilterRecord {
-  id: string;
-  name: string;
-  filter: FilterGroup;
-  createdAt: string;
-}
+export type OwnerRoleMap = Record<string, OwnerRole>;

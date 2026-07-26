@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from "idb";
-import type { CompanyRecord, OwnerRecord, SavedFilterRecord, TeamRecord } from "./types";
+import type { CompanyRecord, OwnerRecord, TeamRecord } from "./types";
 
 const DB_NAME = "data-assignment-dashboard";
 const DB_VERSION = 2;
@@ -21,9 +21,6 @@ function getDb() {
         }
         if (!db.objectStoreNames.contains("meta")) {
           db.createObjectStore("meta", { keyPath: "key" });
-        }
-        if (!db.objectStoreNames.contains("savedFilters")) {
-          db.createObjectStore("savedFilters", { keyPath: "id" });
         }
       },
     });
@@ -83,28 +80,7 @@ export async function setMeta(key: string, value: unknown): Promise<void> {
   await db.put("meta", { key, value });
 }
 
-export async function getAllSavedFilters(): Promise<SavedFilterRecord[]> {
-  const db = await getDb();
-  return db.getAll("savedFilters");
-}
-
-export async function putSavedFilter(filter: SavedFilterRecord): Promise<void> {
-  const db = await getDb();
-  await db.put("savedFilters", filter);
-}
-
-export async function deleteSavedFilter(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete("savedFilters", id);
-}
-
 export async function clearAllData(): Promise<void> {
   const db = await getDb();
-  await Promise.all([
-    db.clear("companies"),
-    db.clear("owners"),
-    db.clear("teams"),
-    db.clear("meta"),
-    db.clear("savedFilters"),
-  ]);
+  await Promise.all([db.clear("companies"), db.clear("owners"), db.clear("teams"), db.clear("meta")]);
 }

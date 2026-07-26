@@ -1,6 +1,4 @@
-import { recommendedAction } from "@/lib/scoring/engine";
-import type { OwnerRecord, ScoredCompany, TeamRecord } from "@/lib/types";
-import { ScoreBadge } from "./ScoreBadge";
+import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -17,7 +15,7 @@ export function CompanyDrawer({
   teams,
   onClose,
 }: {
-  company: ScoredCompany | null;
+  company: CompanyRecord | null;
   owners: Map<string, OwnerRecord>;
   teams: Map<string, TeamRecord>;
   onClose: () => void;
@@ -40,50 +38,24 @@ export function CompanyDrawer({
           </button>
         </div>
 
-        <div className="mb-4">
-          <ScoreBadge score={company.score} band={company.scoreBand} />
-          <p className="mt-2 text-sm font-medium">{recommendedAction(company)}</p>
-        </div>
-
-        {company.disqualifiers.length > 0 && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3">
-            <div className="mb-1 text-xs font-semibold text-red-800">Disqualifying flags</div>
-            <ul className="list-inside list-disc text-sm text-red-800">
-              {company.disqualifiers.map((d) => (
-                <li key={d.name}>{d.reason}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {company.scoreReasons.length > 0 && (
-          <div className="mb-4 rounded border border-gray-200 bg-gray-50 p-3">
-            <div className="mb-1 text-xs font-semibold text-gray-700">Score breakdown</div>
-            <ul className="text-sm text-gray-800">
-              {company.scoreReasons.map((r) => (
-                <li key={r.signal} className="flex justify-between py-0.5">
-                  <span>{r.description}</span>
-                  <span className="font-medium text-emerald-700">+{r.points}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         <div className="grid grid-cols-2 gap-3">
           <Field label="Company owner" value={owners.get(company.ownerId ?? "")?.name ?? company.ownerId} />
           <Field label="HubSpot team" value={teams.get(company.teamId ?? "")?.name ?? company.teamId} />
           <Field label="Website status" value={company.websiteStatus} />
           <Field label="GD name" value={company.gdName} />
           <Field label="Lifecycle stage (GD level)" value={company.lifecycleStageGdLevel} />
-          <Field label="Part of group dealership" value={company.isGroupDealership === null ? null : company.isGroupDealership ? "Yes" : "No"} />
-          <Field label="Dealership group name" value={company.dealershipGroupName} />
+          <Field
+            label="Part of group dealership"
+            value={company.isGroupDealership === null ? null : company.isGroupDealership ? "Yes" : "No"}
+          />
           <Field label="Potential rooftops" value={company.potentialRooftops} />
+          <Field label="Dealership rank" value={company.dealershipRank} />
           <Field label="Associated contacts" value={company.numAssociatedContacts} />
           <Field label="Associated deals" value={company.numAssociatedDeals} />
           <Field label="Used cars" value={company.numUsedCars} />
           <Field label="New cars" value={company.numNewCars} />
           <Field label="Total cars" value={company.totalCars} />
+          <Field label="Cars (GD level)" value={company.numCarsGdLevel} />
           <Field label="OEM" value={company.oem} />
           <Field label="Partner name" value={company.partnerName} />
           <Field label="DMS name" value={company.dmsName} />
@@ -92,9 +64,22 @@ export function CompanyDrawer({
           <Field label="City" value={company.city} />
           <Field label="State" value={company.state} />
           <Field label="Country" value={company.country} />
-          <Field label="Last activity date" value={company.lastActivityDate ? new Date(company.lastActivityDate).toLocaleDateString() : null} />
-          <Field label="Create date" value={company.createDate ? new Date(company.createDate).toLocaleDateString() : null} />
-          <Field label="Owner assigned date" value={company.ownerAssignedDate ? new Date(company.ownerAssignedDate).toLocaleDateString() : null} />
+          <Field
+            label="Last activity date"
+            value={company.lastActivityDate ? new Date(company.lastActivityDate).toLocaleDateString() : null}
+          />
+          <Field
+            label="GD last activity"
+            value={company.gdLastActivity ? new Date(company.gdLastActivity).toLocaleDateString() : null}
+          />
+          <Field
+            label="Create date"
+            value={company.createDate ? new Date(company.createDate).toLocaleDateString() : null}
+          />
+          <Field
+            label="Owner assigned date"
+            value={company.ownerAssignedDate ? new Date(company.ownerAssignedDate).toLocaleDateString() : null}
+          />
         </div>
       </div>
     </div>

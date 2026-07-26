@@ -3,8 +3,6 @@ import type { Operator } from "./types";
 export type FieldKind = "string" | "number" | "boolean" | "date";
 
 export interface FieldDef {
-  // Loose string, not `keyof CompanyRecord` — "score"/"scoreBand" below are
-  // computed fields that only exist on ScoredCompany, not raw CompanyRecord.
   column: string;
   kind: FieldKind;
   label: string;
@@ -55,6 +53,8 @@ export const FIELD_REGISTRY: Record<string, FieldDef> = {
     kind: "number",
     label: "# Rooftops in group",
   },
+  dealership_rank: { column: "dealershipRank", kind: "string", label: "Dealership rank" },
+  rooftop_last_activity: { column: "gdLastActivity", kind: "date", label: "GD last activity" },
 
   num_associated_contacts: {
     column: "numAssociatedContacts",
@@ -84,10 +84,6 @@ export const FIELD_REGISTRY: Record<string, FieldDef> = {
 
   notes_last_contacted: { column: "lastActivityDate", kind: "date", label: "Last activity date" },
   createdate: { column: "createDate", kind: "date", label: "Create date" },
-
-  // Computed at filter-time from the active scoring config, not stored data.
-  score: { column: "score", kind: "number", label: "Assignability score" },
-  scoreBand: { column: "scoreBand", kind: "string", label: "Score band" },
 };
 
 /** Which operators make sense per field kind — drives the filter builder UI. */

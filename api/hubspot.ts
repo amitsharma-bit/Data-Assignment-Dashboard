@@ -11,6 +11,13 @@ export const config = { runtime: "edge" };
  * there's no CORS issue here. HubSpot's API itself does not allow direct
  * browser calls with a private app token, which is why this proxy exists
  * at all.
+ *
+ * NOTE: this is no longer read-only. The "/crm/v3/objects/companies" prefix
+ * also covers `.../batch/update`, used by src/lib/hubspot/mutate.ts to
+ * change Company owner (the dashboard's "Assign to" action). That's a real
+ * write against live HubSpot data — the frontend confirms with the user
+ * before calling it, but the proxy itself doesn't distinguish reads from
+ * writes, only allowed vs disallowed paths.
  */
 const ALLOWED_PATH_PREFIXES = [
   "/crm/v3/objects/companies",

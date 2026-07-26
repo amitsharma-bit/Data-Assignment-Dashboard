@@ -1,36 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { clearAllData, getAllCompanies, getAllOwners, getAllTeams, getMeta } from "@/lib/db";
 import { runSync, type SyncProgress } from "@/lib/hubspot/sync";
-import { loadScoringConfig, saveScoringConfig } from "@/lib/scoring/storage";
-import { scoreCompanies } from "@/lib/scoring/engine";
-import type { ScoringConfig } from "@/lib/scoring/types";
-import type { CompanyRecord, OwnerRecord, ScoredCompany, TeamRecord } from "@/lib/types";
+import { reassignCompanies as reassignCompaniesInHubspot } from "@/lib/hubspot/mutate";
+import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 
 export function useAppData() {
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [owners, setOwners] = useState<OwnerRecord[]>([]);
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
-  const [scoringConfig, setScoringConfig] = useState<ScoringConfig | null>(null);
 
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  const [reassigning, setReassigning] = useState(false);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+
   const loadFromLocalCache = useCallback(async () => {
-    const [c, o, t, ts, config] = await Promise.all([
+    const [c, o, t, ts] = await Promise.all([
       getAllCompanies(),
       getAllOwners(),
       getAllTeams(),
       getMeta<string>("lastSyncedAt"),
-      loadScoringConfig(),
     ]);
     setCompanies(c);
     setOwners(o);
     setTeams(t);
     setLastSyncedAt(ts ?? null);
-    setScoringConfig(config);
     setLoaded(true);
   }, []);
 
@@ -60,35 +58,43 @@ export function useAppData() {
     await loadFromLocalCache();
   }, [loadFromLocalCache]);
 
-  const updateScoringConfig = useCallback(async (config: ScoringConfig) => {
-    await saveScoringConfig(config);
-    setScoringConfig(config);
-  }, []);
+  const reassignCompanies = useCallback(
+    async (companyIds: string[], newOwnerId: string) => {
+      if (companyIds.length === 0) return;
+      setReassigning(true);
+      setReassignError(null);
+      try {
+        await reassignCompaniesInHubspot(companyIds, newOwnerId);
+        await loadFromLocalCache();
+      } catch (err) {
+        setReassignError(err instanceof Error ? err.message : "Reassignment failed");
+        throw err;
+      } finally {
+        setReassigning(false);
+      }
+    },
+    [loadFromLocalCache],
+  );
 
   const ownerMap = useMemo(() => new Map(owners.map((o) => [o.id, o])), [owners]);
   const teamMap = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
 
-  const scoredCompanies: ScoredCompany[] = useMemo(() => {
-    if (!scoringConfig) return [];
-    return scoreCompanies(companies, scoringConfig);
-  }, [companies, scoringConfig]);
-
   return {
     loaded,
     companies,
-    scoredCompanies,
     owners,
     teams,
     ownerMap,
     teamMap,
     lastSyncedAt,
-    scoringConfig,
-    updateScoringConfig,
     syncing,
     syncProgress,
     syncError,
     handleSync,
     handleResetLocalData,
+    reassigning,
+    reassignError,
+    reassignCompanies,
   };
 }
 

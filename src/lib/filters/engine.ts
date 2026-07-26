@@ -21,10 +21,10 @@ function coerce(field: FieldDef, raw: unknown): unknown {
   }
 }
 
-// `field.column` is a loose string (it can name a computed field like
-// "score" that only exists on ScoredCompany, not CompanyRecord itself), so
+// `field.column` is a loose string rather than `keyof CompanyRecord`, so
 // this one cast is the single place that trades static indexing safety for
-// that flexibility — every other function here stays generic over T.
+// the flexibility of registering fields dynamically — every other function
+// here stays generic over T.
 function fieldValue<T extends CompanyRecord>(company: T, field: FieldDef): unknown {
   const raw = (company as unknown as Record<string, unknown>)[field.column];
   if (field.kind === "date" && typeof raw === "string") {
