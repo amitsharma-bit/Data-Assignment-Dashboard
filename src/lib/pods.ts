@@ -8,13 +8,14 @@ export interface RosterEntry {
 
 /**
  * The real account-grouping structure ("AE Pods") — distinct from HubSpot's
- * built-in Teams feature, which isn't used for this at all. Pulled
- * verbatim from the roster Amit provided; names are matched against synced
- * HubSpot owner names (trim/case-insensitive). A couple of names are known
- * to differ slightly from HubSpot's own records (e.g. this roster says
- * "Name Harrison" where HubSpot has the owner as "Nam Harrison") — anyone
- * who doesn't match shows up as "Unassigned" rather than silently
- * disappearing, and can be fixed by correcting the name below.
+ * built-in Teams feature, which isn't used for this at all. Names below are
+ * matched against synced HubSpot owner names (trim/case-insensitive) —
+ * anyone who doesn't match shows up as "Unassigned" rather than silently
+ * disappearing, so mismatches are visible instead of hidden. If someone
+ * shows up Unassigned who shouldn't be, check their exact name in HubSpot
+ * (Settings > Users) and correct it here — the roster's display name isn't
+ * always what HubSpot has on file (e.g. "Namrata Sharma" below was
+ * originally listed as "Nam Harrison").
  */
 export const POD_ROSTER: RosterEntry[] = [
   { name: "Ankur Patel", role: "AE", pod: "Shashank" },
@@ -47,7 +48,7 @@ export const POD_ROSTER: RosterEntry[] = [
   { name: "Kreeti Chhabra", role: "SDR", pod: null },
   { name: "Kshitij Agarwal", role: "SDR", pod: "Neelima" },
   { name: "Lakshya Gaurh", role: "SDR", pod: null },
-  { name: "Name Harrison", role: "SDR", pod: null }, // HubSpot: "Nam Harrison"
+  { name: "Namrata Sharma", role: "SDR", pod: "Saarthak" }, // roster said "Nam Harrison" — corrected to her actual HubSpot name
   { name: "Palak Narula", role: "SDR", pod: "Prince" },
   { name: "Prabhjeet Kaur", role: "SDR", pod: "Saarthak" },
   { name: "Priyanka Sambyal", role: "SDR", pod: "Neelima" },
