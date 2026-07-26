@@ -84,8 +84,8 @@ export function SmartPlannerTab({
   if (!salesopsOwner) {
     return (
       <div className="mx-auto max-w-5xl p-6">
-        <h1 className="mb-2 text-xl font-semibold">Smart Assignment Planner</h1>
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <h1 className="mb-2 text-xl font-semibold text-slate-900">Smart Assignment Planner</h1>
+        <div className="card border-amber-200 bg-amber-50 text-sm text-amber-900">
           Couldn't find an owner named "Salesops ." in the synced owner list. Sync first if you haven't.
         </div>
       </div>
@@ -93,7 +93,7 @@ export function SmartPlannerTab({
   }
 
   const sortHeader = (label: string, field: string) => (
-    <th onClick={() => toggleSort(field)} className="cursor-pointer px-3 py-2 text-left font-medium text-gray-700 hover:underline">
+    <th onClick={() => toggleSort(field)} className="cursor-pointer hover:text-indigo-600">
       {label}
       {sortField === field && (sortDirection === "asc" ? " ▲" : " ▼")}
     </th>
@@ -101,38 +101,38 @@ export function SmartPlannerTab({
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <h1 className="mb-1 text-xl font-semibold">Smart Assignment Planner</h1>
-      <p className="mb-4 text-sm text-gray-500">
+      <h1 className="mb-1 text-xl font-semibold text-slate-900">Smart Assignment Planner</h1>
+      <p className="mb-4 text-sm text-slate-500">
         Scans every company owned by "{salesopsOwner.name}" ({pool.length.toLocaleString()} total) against the
         criteria below to surface the best candidates to hand out.
       </p>
 
-      <div className="mb-4 rounded-lg border bg-white p-4">
+      <div className="card mb-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Minimum associated contacts</label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Minimum associated contacts</label>
             <input
               type="number"
               min={0}
-              className="w-full rounded border px-2 py-1.5 text-sm"
+              className="input w-full"
               value={minContacts}
               onChange={(e) => setMinContacts(Number(e.target.value))}
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Minimum used cars (manual — blank = no minimum)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Minimum used cars (manual — blank = no minimum)</label>
             <input
               type="number"
               min={0}
-              className="w-full rounded border px-2 py-1.5 text-sm"
+              className="input w-full"
               placeholder="No minimum"
               value={minUsedCars}
               onChange={(e) => setMinUsedCars(e.target.value === "" ? "" : Number(e.target.value))}
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Country</label>
-            <select className="w-full rounded border px-2 py-1.5 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Country</label>
+            <select className="input w-full" value={country} onChange={(e) => setCountry(e.target.value)}>
               <option value="">All countries</option>
               {countryOptions.map((c) => (
                 <option key={c} value={c}>
@@ -142,20 +142,25 @@ export function SmartPlannerTab({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Exclude lifecycle stage (GD level)</label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Exclude lifecycle stage (GD level)</label>
             <div className="flex flex-wrap gap-3 pt-1.5">
               {EXCLUDABLE_LIFECYCLE_STAGES.map((stage) => (
-                <label key={stage} className="flex items-center gap-1.5 text-sm">
-                  <input type="checkbox" checked={excludedStages.has(stage)} onChange={() => toggleStage(stage)} />
+                <label key={stage} className="flex items-center gap-1.5 text-sm text-slate-700">
+                  <input type="checkbox" className="accent-indigo-600" checked={excludedStages.has(stage)} onChange={() => toggleStage(stage)} />
                   {stage}
                 </label>
               ))}
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">OEM</label>
-            <label className="flex items-center gap-1.5 pt-1.5 text-sm">
-              <input type="checkbox" checked={excludeIndependentOem} onChange={(e) => setExcludeIndependentOem(e.target.checked)} />
+            <label className="mb-1 block text-xs font-medium text-slate-600">OEM</label>
+            <label className="flex items-center gap-1.5 pt-1.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="accent-indigo-600"
+                checked={excludeIndependentOem}
+                onChange={(e) => setExcludeIndependentOem(e.target.checked)}
+              />
               Exclude Independent OEM
             </label>
           </div>
@@ -163,11 +168,11 @@ export function SmartPlannerTab({
       </div>
 
       <div className="mb-2 flex flex-wrap items-center gap-3">
-        <span className="text-sm text-gray-600">{matches.length.toLocaleString()} companies match</span>
-        <button onClick={selectAllVisible} className="text-sm font-medium text-blue-700 hover:underline">
+        <span className="badge-emerald">{matches.length.toLocaleString()} companies match</span>
+        <button onClick={selectAllVisible} className="text-sm font-medium text-indigo-600 hover:underline">
           Select all visible
         </button>
-        <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:underline">
+        <button onClick={() => setSelected(new Set())} className="text-sm text-slate-500 hover:underline">
           Clear selection
         </button>
         <div className="ml-auto">
@@ -175,46 +180,46 @@ export function SmartPlannerTab({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+      <div className="table-shell">
+        <table>
+          <thead>
             <tr>
-              <th className="px-3 py-2" />
+              <th className="w-8" />
               {sortHeader("Company Name", "name")}
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Domain</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">GD Name</th>
+              <th>Domain</th>
+              <th>GD Name</th>
               {sortHeader("Contacts", "num_associated_contacts")}
               {sortHeader("Used Cars", "number_of_used_cars")}
-              <th className="px-3 py-2 text-left font-medium text-gray-700">New Cars</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Total Cars</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Lifecycle (GD Level)</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">OEM</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Country</th>
+              <th>New Cars</th>
+              <th>Total Cars</th>
+              <th>Lifecycle (GD Level)</th>
+              <th>OEM</th>
+              <th>Country</th>
             </tr>
           </thead>
           <tbody>
             {matches.map((c) => (
-              <tr key={c.id} className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">
-                  <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelected(c.id)} />
+              <tr key={c.id}>
+                <td>
+                  <input type="checkbox" className="accent-indigo-600" checked={selected.has(c.id)} onChange={() => toggleSelected(c.id)} />
                 </td>
-                <td className="cursor-pointer px-3 py-2" onClick={() => setSelectedCompany(c)}>
+                <td className="cursor-pointer font-medium text-slate-900" onClick={() => setSelectedCompany(c)}>
                   {c.name ?? "—"}
                 </td>
-                <td className="px-3 py-2">{c.domain ?? "—"}</td>
-                <td className="px-3 py-2">{c.gdName ?? "—"}</td>
-                <td className="px-3 py-2">{c.numAssociatedContacts ?? "—"}</td>
-                <td className="px-3 py-2">{c.numUsedCars ?? "—"}</td>
-                <td className="px-3 py-2">{c.numNewCars ?? "—"}</td>
-                <td className="px-3 py-2">{c.totalCars ?? "—"}</td>
-                <td className="px-3 py-2">{c.lifecycleStageGdLevel ?? "—"}</td>
-                <td className="px-3 py-2">{c.oem ?? "—"}</td>
-                <td className="px-3 py-2">{c.country ?? "—"}</td>
+                <td>{c.domain ?? "—"}</td>
+                <td>{c.gdName ?? "—"}</td>
+                <td>{c.numAssociatedContacts ?? "—"}</td>
+                <td>{c.numUsedCars ?? "—"}</td>
+                <td>{c.numNewCars ?? "—"}</td>
+                <td>{c.totalCars ?? "—"}</td>
+                <td>{c.lifecycleStageGdLevel ?? "—"}</td>
+                <td>{c.oem ?? "—"}</td>
+                <td>{c.country ?? "—"}</td>
               </tr>
             ))}
             {matches.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={11} className="px-3 py-8 text-center text-slate-500">
                   No companies meet these criteria.
                 </td>
               </tr>

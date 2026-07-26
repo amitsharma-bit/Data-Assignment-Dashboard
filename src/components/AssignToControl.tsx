@@ -34,12 +34,7 @@ export function AssignToControl({
 
   return (
     <div className="flex items-center gap-2">
-      <select
-        className="rounded border px-2 py-1.5 text-sm"
-        value={ownerId}
-        onChange={(e) => setOwnerId(e.target.value)}
-        disabled={busy}
-      >
+      <select className="input" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} disabled={busy}>
         <option value="">Assign to...</option>
         {sortedOwners.map((o) => (
           <option key={o.id} value={o.id}>
@@ -47,11 +42,7 @@ export function AssignToControl({
           </option>
         ))}
       </select>
-      <button
-        onClick={handleClick}
-        disabled={!ownerId || busy || count === 0}
-        className="rounded bg-gray-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-      >
+      <button onClick={handleClick} disabled={!ownerId || busy || count === 0} className="btn-primary">
         {busy ? "Assigning..." : `Assign ${count} selected`}
       </button>
     </div>

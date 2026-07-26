@@ -59,21 +59,35 @@ export function Leaderboard({
           <button
             key={pod}
             onClick={() => onSelectPod(selected ? null : pod)}
-            className={`rounded-lg border p-4 text-left transition ${
-              selected ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 bg-white hover:border-gray-400"
+            className={`rounded-xl border p-4 text-left shadow-sm transition ${
+              selected
+                ? "border-indigo-600 bg-indigo-600 text-white"
+                : "border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md"
             }`}
           >
-            <div className="mb-2 text-sm font-semibold">{pod}</div>
-            <div className="space-y-0.5 text-xs">
-              <div className={selected ? "text-gray-300" : "text-gray-500"}>
-                Group Dealerships: <span className="font-medium">{gdCount}</span>
-              </div>
-              <div className={selected ? "text-gray-300" : "text-gray-500"}>
-                Single Accounts: <span className="font-medium">{singleCount}</span>
-              </div>
-              <div className={selected ? "text-gray-300" : "text-gray-500"}>
-                Total Companies (w/ rooftops): <span className="font-medium">{totalCompanies}</span>
-              </div>
+            <div className="mb-2 flex items-center justify-between">
+              <span
+                className={`text-xs font-semibold uppercase tracking-wide ${selected ? "text-indigo-100" : "text-slate-500"}`}
+              >
+                {pod}
+              </span>
+              <span
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
+                  selected ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-600"
+                }`}
+              >
+                ●
+              </span>
+            </div>
+            <div className={`text-2xl font-bold ${selected ? "text-white" : "text-slate-900"}`}>{totalCompanies}</div>
+            <div className={`mb-2 text-xs ${selected ? "text-indigo-100" : "text-slate-400"}`}>total companies (w/ rooftops)</div>
+            <div className={`flex justify-between text-xs ${selected ? "text-indigo-100" : "text-slate-500"}`}>
+              <span>
+                GD: <span className="font-medium">{gdCount}</span>
+              </span>
+              <span>
+                Single: <span className="font-medium">{singleCount}</span>
+              </span>
             </div>
           </button>
         );

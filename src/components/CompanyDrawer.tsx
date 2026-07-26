@@ -5,8 +5,8 @@ import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-sm">{value ?? "—"}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-sm text-slate-800">{value ?? "—"}</div>
     </div>
   );
 }
@@ -34,15 +34,15 @@ export function CompanyDrawer({
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold">{company.name ?? "Unnamed company"}</h2>
-            <p className="text-sm text-gray-500">{company.domain}</p>
+            <h2 className="text-lg font-semibold text-slate-900">{company.name ?? "Unnamed company"}</h2>
+            <p className="text-sm text-slate-500">{company.domain}</p>
           </div>
-          <button onClick={onClose} className="rounded border px-2 py-1 text-sm hover:bg-gray-100">
+          <button onClick={onClose} className="btn-secondary">
             Close
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Company owner" value={owners.get(company.ownerId ?? "")?.name ?? company.ownerId} />
           <Field label="Sales pod" value={podForOwner(company.ownerId, owners, rosterOverrides) ?? "Unassigned"} />
           <Field label="Owner role" value={roleForOwner(company.ownerId, owners, rosterOverrides) ?? "—"} />

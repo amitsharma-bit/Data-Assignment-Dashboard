@@ -28,19 +28,24 @@ export default function App() {
 
   return (
     <div>
-      <div className="border-b bg-white">
+      <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <div>
-            <h1 className="text-lg font-semibold">Data Assignment Dashboard</h1>
-            <p className="text-xs text-gray-500">
-              {data.lastSyncedAt ? `Last synced ${new Date(data.lastSyncedAt).toLocaleString()}` : "Not synced yet"}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm">
+              DA
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold leading-tight text-slate-900">Data Assignment Dashboard</h1>
+              <p className="text-xs text-slate-500">
+                {data.lastSyncedAt ? `Last synced ${new Date(data.lastSyncedAt).toLocaleString()}` : "Not synced yet"}
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => data.handleSync(data.companies.length === 0 ? "full" : "incremental")}
               disabled={data.syncing}
-              className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
+              className="btn-primary"
             >
               {data.syncing
                 ? data.syncProgress
@@ -50,10 +55,10 @@ export default function App() {
                   ? "Run first sync"
                   : "Sync now"}
             </button>
-            <button onClick={() => data.handleSync("full")} disabled={data.syncing} className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50">
+            <button onClick={() => data.handleSync("full")} disabled={data.syncing} className="btn-secondary">
               Full resync
             </button>
-            <button onClick={() => setShowSettings((v) => !v)} className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100">
+            <button onClick={() => setShowSettings((v) => !v)} className="btn-secondary">
               Settings
             </button>
           </div>
@@ -65,9 +70,9 @@ export default function App() {
 
         {showSettings && (
           <div className="mx-auto max-w-7xl px-6 pb-4">
-            <div className="rounded-lg border bg-gray-50 p-4">
-              <h2 className="mb-2 text-sm font-semibold">Settings</h2>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+            <div className="card bg-slate-50">
+              <h2 className="mb-2 text-sm font-semibold text-slate-900">Settings</h2>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
                 Dashboard access key (only needed if DASHBOARD_ACCESS_KEY is set on the server)
               </label>
               <div className="flex gap-2">
@@ -75,13 +80,13 @@ export default function App() {
                   type="password"
                   value={accessKeyInput}
                   onChange={(e) => setAccessKeyInput(e.target.value)}
-                  className="w-64 rounded border px-2 py-1.5 text-sm"
+                  className="input w-64"
                 />
-                <button onClick={() => setAccessKey(accessKeyInput)} className="rounded bg-gray-900 px-3 py-1.5 text-sm text-white">
+                <button onClick={() => setAccessKey(accessKeyInput)} className="btn-primary">
                   Save
                 </button>
               </div>
-              <button onClick={handleResetLocalDataConfirmed} className="mt-3 text-sm text-red-600 hover:underline">
+              <button onClick={handleResetLocalDataConfirmed} className="btn-danger-ghost mt-3 !px-0">
                 Reset local data (clears this browser's cache)
               </button>
             </div>
@@ -93,8 +98,10 @@ export default function App() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-3 text-sm font-medium ${
-                tab === t.key ? "border-b-2 border-gray-900 text-gray-900" : "text-gray-500 hover:text-gray-800"
+              className={`px-4 py-3 text-sm font-medium transition ${
+                tab === t.key
+                  ? "border-b-2 border-indigo-600 text-indigo-600"
+                  : "border-b-2 border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
               {t.label}
@@ -104,10 +111,10 @@ export default function App() {
       </div>
 
       {!data.loaded ? (
-        <div className="p-8 text-sm text-gray-500">Loading local cache...</div>
+        <div className="p-8 text-sm text-slate-500">Loading local cache...</div>
       ) : data.companies.length === 0 ? (
         <div className="mx-auto max-w-7xl p-6">
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="card border-amber-200 bg-amber-50 text-sm text-amber-900">
             No data cached in this browser yet. Click <strong>Run first sync</strong> above — for a 100k+ record
             portal this can take a few minutes and only needs to be done once.
           </div>

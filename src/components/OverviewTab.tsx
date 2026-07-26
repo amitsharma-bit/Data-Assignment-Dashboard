@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Leaderboard } from "./Leaderboard";
 import { CompanyDrawer } from "./CompanyDrawer";
+import { Avatar } from "./ui/Avatar";
 import { getDistinctPods, podForOwner, roleForOwner } from "@/lib/pods";
 import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, OwnerRole, TeamRecord } from "@/lib/types";
@@ -50,7 +51,7 @@ export function OverviewTab({
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <h1 className="mb-4 text-xl font-semibold">Overview</h1>
+      <h1 className="mb-4 text-xl font-semibold text-slate-900">Overview</h1>
 
       <Leaderboard
         pods={pods}
@@ -63,18 +64,14 @@ export function OverviewTab({
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
-          className="w-72 rounded border px-2 py-1.5 text-sm"
+          className="input w-72"
           placeholder="Search any company or group..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="flex rounded border">
+        <div className="segmented">
           {(["All", "SDR", "AE"] as RoleFilter[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRoleFilter(r)}
-              className={`px-3 py-1.5 text-sm ${roleFilter === r ? "bg-gray-900 text-white" : "hover:bg-gray-100"}`}
-            >
+            <button key={r} onClick={() => setRoleFilter(r)} className={roleFilter === r ? "segmented-item-active" : "segmented-item"}>
               {r}
             </button>
           ))}
@@ -82,36 +79,41 @@ export function OverviewTab({
       </div>
 
       {!selectedPod && !search.trim() ? (
-        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-gray-500">
+        <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
           Select a pod above, or search, to see accounts.
         </div>
       ) : (
         <>
-          <div className="mb-2 text-sm text-gray-600">{visible.length.toLocaleString()} accounts</div>
-          <div className="overflow-x-auto rounded-lg border bg-white">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-gray-50">
+          <div className="mb-2 text-sm text-slate-500">{visible.length.toLocaleString()} accounts</div>
+          <div className="table-shell">
+            <table>
+              <thead>
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium text-gray-700">Company Name</th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-700">Company Domain Name</th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-700">Company Owner</th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-700">GD Name</th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-700">Potential Rooftops</th>
+                  <th>Company Name</th>
+                  <th>Company Domain Name</th>
+                  <th>Company Owner</th>
+                  <th>GD Name</th>
+                  <th>Potential Rooftops</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((c) => (
-                  <tr key={c.id} className="cursor-pointer border-b hover:bg-gray-50" onClick={() => setSelectedCompany(c)}>
-                    <td className="px-3 py-2">{c.name ?? "—"}</td>
-                    <td className="px-3 py-2">{c.domain ?? "—"}</td>
-                    <td className="px-3 py-2">{ownerMap.get(c.ownerId ?? "")?.name ?? c.ownerId ?? "—"}</td>
-                    <td className="px-3 py-2">{c.gdName ?? "—"}</td>
-                    <td className="px-3 py-2">{c.potentialRooftops ?? "—"}</td>
+                  <tr key={c.id} className="cursor-pointer" onClick={() => setSelectedCompany(c)}>
+                    <td className="font-medium text-slate-900">{c.name ?? "—"}</td>
+                    <td>{c.domain ?? "—"}</td>
+                    <td>
+                      <span className="flex items-center gap-2">
+                        <Avatar id={c.ownerId ?? "?"} name={ownerMap.get(c.ownerId ?? "")?.name ?? null} />
+                        {ownerMap.get(c.ownerId ?? "")?.name ?? c.ownerId ?? "—"}
+                      </span>
+                    </td>
+                    <td>{c.gdName ?? "—"}</td>
+                    <td>{c.potentialRooftops ?? "—"}</td>
                   </tr>
                 ))}
                 {visible.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
                       No accounts match.
                     </td>
                   </tr>

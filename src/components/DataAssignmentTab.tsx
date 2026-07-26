@@ -47,8 +47,8 @@ export function DataAssignmentTab({
   if (!salesopsOwner) {
     return (
       <div className="mx-auto max-w-5xl p-6">
-        <h1 className="mb-2 text-xl font-semibold">Data Assignment</h1>
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <h1 className="mb-2 text-xl font-semibold text-slate-900">Data Assignment</h1>
+        <div className="card border-amber-200 bg-amber-50 text-sm text-amber-900">
           Couldn't find an owner named "Salesops ." in the synced owner list. Sync first if you haven't, or check
           the exact owner name in HubSpot — matching is case-insensitive and ignores punctuation/spacing, but the
           name itself has to contain "salesops".
@@ -59,23 +59,31 @@ export function DataAssignmentTab({
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <h1 className="mb-1 text-xl font-semibold">Data Assignment</h1>
-      <p className="mb-4 text-sm text-gray-500">Pool: companies currently owned by "{salesopsOwner.name}".</p>
+      <h1 className="mb-1 text-xl font-semibold text-slate-900">Data Assignment</h1>
+      <p className="mb-4 text-sm text-slate-500">Pool: companies currently owned by "{salesopsOwner.name}".</p>
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button
           onClick={() => setBucket(bucket === "gd" ? null : "gd")}
-          className={`rounded-lg border p-4 text-left ${bucket === "gd" ? "border-gray-900 bg-gray-900 text-white" : "bg-white hover:border-gray-400"}`}
+          className={`rounded-xl border p-4 text-left shadow-sm transition ${
+            bucket === "gd" ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md"
+          }`}
         >
-          <div className="text-sm font-semibold">Group Dealerships Available For Assignment</div>
-          <div className={`text-2xl font-bold ${bucket === "gd" ? "text-white" : "text-gray-900"}`}>{gdGroupCount}</div>
+          <div className={`text-xs font-semibold uppercase tracking-wide ${bucket === "gd" ? "text-indigo-100" : "text-slate-500"}`}>
+            Group Dealerships Available For Assignment
+          </div>
+          <div className={`text-2xl font-bold ${bucket === "gd" ? "text-white" : "text-slate-900"}`}>{gdGroupCount}</div>
         </button>
         <button
           onClick={() => setBucket(bucket === "single" ? null : "single")}
-          className={`rounded-lg border p-4 text-left ${bucket === "single" ? "border-gray-900 bg-gray-900 text-white" : "bg-white hover:border-gray-400"}`}
+          className={`rounded-xl border p-4 text-left shadow-sm transition ${
+            bucket === "single" ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md"
+          }`}
         >
-          <div className="text-sm font-semibold">Single Companies Available For Assignment</div>
-          <div className={`text-2xl font-bold ${bucket === "single" ? "text-white" : "text-gray-900"}`}>{singlePool.length}</div>
+          <div className={`text-xs font-semibold uppercase tracking-wide ${bucket === "single" ? "text-indigo-100" : "text-slate-500"}`}>
+            Single Companies Available For Assignment
+          </div>
+          <div className={`text-2xl font-bold ${bucket === "single" ? "text-white" : "text-slate-900"}`}>{singlePool.length}</div>
         </button>
       </div>
 
@@ -138,10 +146,10 @@ function GDSection({
     .flatMap((g) => g.companies.map((c) => c.id));
 
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="card">
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <input
-          className="w-64 rounded border px-2 py-1.5 text-sm"
+          className="input w-64"
           placeholder="Search group name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -153,40 +161,45 @@ function GDSection({
         <FilterBuilderGroup group={filter} onChange={setFilter} />
       </div>
 
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+      <div className="table-shell">
+        <table>
+          <thead>
             <tr>
-              <th className="px-3 py-2" />
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Group Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">#Potential Rooftops</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Dealership Rank</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">GD Last Activity</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">No of Cars (GD Level)</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">GD Stage</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Country</th>
+              <th className="w-8" />
+              <th>Group Name</th>
+              <th>#Potential Rooftops</th>
+              <th>Dealership Rank</th>
+              <th>GD Last Activity</th>
+              <th>No of Cars (GD Level)</th>
+              <th>GD Stage</th>
+              <th>Country</th>
             </tr>
           </thead>
           <tbody>
             {groups.map((g) => (
-              <tr key={g.key} className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">
-                  <input type="checkbox" checked={selected.has(g.key)} onChange={() => toggle(g.key)} />
+              <tr key={g.key}>
+                <td>
+                  <input
+                    type="checkbox"
+                    className="accent-indigo-600"
+                    checked={selected.has(g.key)}
+                    onChange={() => toggle(g.key)}
+                  />
                 </td>
-                <td className="cursor-pointer px-3 py-2" onClick={() => g.companies[0] && onOpenCompany(g.companies[0])}>
+                <td className="cursor-pointer font-medium text-slate-900" onClick={() => g.companies[0] && onOpenCompany(g.companies[0])}>
                   {g.gdName ?? "—"}
                 </td>
-                <td className="px-3 py-2">{g.potentialRooftops ?? "—"}</td>
-                <td className="px-3 py-2">{g.dealershipRank ?? "—"}</td>
-                <td className="px-3 py-2">{g.gdLastActivity ? new Date(g.gdLastActivity).toLocaleDateString() : "—"}</td>
-                <td className="px-3 py-2">{g.numCarsGdLevel ?? "—"}</td>
-                <td className="px-3 py-2">{g.gdStage ?? "—"}</td>
-                <td className="px-3 py-2">{g.country ?? "—"}</td>
+                <td>{g.potentialRooftops ?? "—"}</td>
+                <td>{g.dealershipRank ?? "—"}</td>
+                <td>{g.gdLastActivity ? new Date(g.gdLastActivity).toLocaleDateString() : "—"}</td>
+                <td>{g.numCarsGdLevel ?? "—"}</td>
+                <td>{g.gdStage ?? "—"}</td>
+                <td>{g.country ?? "—"}</td>
               </tr>
             ))}
             {groups.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-8 text-center text-slate-500">
                   No group dealerships match.
                 </td>
               </tr>
@@ -231,15 +244,15 @@ function SingleSection({
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="card">
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <input
-          className="w-64 rounded border px-2 py-1.5 text-sm"
+          className="input w-64"
           placeholder="Search company name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select className="rounded border px-2 py-1.5 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
+        <select className="input" value={country} onChange={(e) => setCountry(e.target.value)}>
           <option value="">All countries</option>
           {countryOptions.map((c) => (
             <option key={c} value={c}>
@@ -250,46 +263,46 @@ function SingleSection({
         <AssignToControl count={selected.size} owners={owners} onAssign={(ownerId) => onReassign([...selected], ownerId)} />
       </div>
 
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+      <div className="table-shell">
+        <table>
+          <thead>
             <tr>
-              <th className="px-3 py-2" />
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Company Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Company Domain Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Website Status</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">GD Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">No of Used Cars</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">No of New Cars</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Total Cars</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Lifecycle Stage (GD Level)</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">OEM's</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Country</th>
+              <th className="w-8" />
+              <th>Company Name</th>
+              <th>Company Domain Name</th>
+              <th>Website Status</th>
+              <th>GD Name</th>
+              <th>No of Used Cars</th>
+              <th>No of New Cars</th>
+              <th>Total Cars</th>
+              <th>Lifecycle Stage (GD Level)</th>
+              <th>OEM's</th>
+              <th>Country</th>
             </tr>
           </thead>
           <tbody>
             {visible.map((c) => (
-              <tr key={c.id} className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">
-                  <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)} />
+              <tr key={c.id}>
+                <td>
+                  <input type="checkbox" className="accent-indigo-600" checked={selected.has(c.id)} onChange={() => toggle(c.id)} />
                 </td>
-                <td className="cursor-pointer px-3 py-2" onClick={() => onOpenCompany(c)}>
+                <td className="cursor-pointer font-medium text-slate-900" onClick={() => onOpenCompany(c)}>
                   {c.name ?? "—"}
                 </td>
-                <td className="px-3 py-2">{c.domain ?? "—"}</td>
-                <td className="px-3 py-2">{c.websiteStatus ?? "—"}</td>
-                <td className="px-3 py-2">{c.gdName ?? "—"}</td>
-                <td className="px-3 py-2">{c.numUsedCars ?? "—"}</td>
-                <td className="px-3 py-2">{c.numNewCars ?? "—"}</td>
-                <td className="px-3 py-2">{c.totalCars ?? "—"}</td>
-                <td className="px-3 py-2">{c.lifecycleStageGdLevel ?? "—"}</td>
-                <td className="px-3 py-2">{c.oem ?? "—"}</td>
-                <td className="px-3 py-2">{c.country ?? "—"}</td>
+                <td>{c.domain ?? "—"}</td>
+                <td>{c.websiteStatus ?? "—"}</td>
+                <td>{c.gdName ?? "—"}</td>
+                <td>{c.numUsedCars ?? "—"}</td>
+                <td>{c.numNewCars ?? "—"}</td>
+                <td>{c.totalCars ?? "—"}</td>
+                <td>{c.lifecycleStageGdLevel ?? "—"}</td>
+                <td>{c.oem ?? "—"}</td>
+                <td>{c.country ?? "—"}</td>
               </tr>
             ))}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={11} className="px-3 py-8 text-center text-slate-500">
                   No companies match.
                 </td>
               </tr>
@@ -297,7 +310,7 @@ function SingleSection({
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-gray-400">Owner column omitted here — every row's owner is "{ownerName}" until reassigned.</p>
+      <p className="mt-2 text-xs text-slate-400">Owner column omitted here — every row's owner is "{ownerName}" until reassigned.</p>
     </div>
   );
 }

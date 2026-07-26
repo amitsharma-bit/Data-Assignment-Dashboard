@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { getDistinctPods, podForOwner, roleForOwner } from "@/lib/pods";
 import type { RosterOverride, RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { OwnerRecord, OwnerRole } from "@/lib/types";
+import { Avatar } from "./ui/Avatar";
+import { RoleBadge } from "./ui/RoleBadge";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -97,22 +99,18 @@ export function AdminControlCenter({
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <h1 className="text-xl font-semibold">Admin · Control Center</h1>
-      <p className="mb-4 text-sm text-gray-500">
+      <h1 className="text-xl font-semibold text-slate-900">Admin · Control Center</h1>
+      <p className="mb-4 text-sm text-slate-500">
         Assign each person's sales pod and role (SDR/AE) here. Matched to a real synced HubSpot owner, so the
         owner id is always correct — no more name-matching guesswork.
       </p>
 
-      <div className="mb-6 rounded-lg border bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold">Add / Update assignment</h2>
+      <div className="card mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">Add / Update assignment</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-gray-600">Person</label>
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
-              value={ownerId}
-              onChange={(e) => loadOwnerIntoForm(e.target.value)}
-            >
+            <label className="mb-1 block text-xs font-medium text-slate-600">Person</label>
+            <select className="input w-full" value={ownerId} onChange={(e) => loadOwnerIntoForm(e.target.value)}>
               <option value="">Select a HubSpot owner...</option>
               {sortedOwners.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -122,16 +120,16 @@ export function AdminControlCenter({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Role</label>
-            <select className="w-full rounded border px-2 py-1.5 text-sm" value={role} onChange={(e) => setRole(e.target.value as OwnerRole)}>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Role</label>
+            <select className="input w-full" value={role} onChange={(e) => setRole(e.target.value as OwnerRole)}>
               <option value="SDR">SDR</option>
               <option value="AE">AE / Manager</option>
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Pod</label>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Pod</label>
             <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
+              className="input w-full"
               value={podChoice}
               onChange={(e) => {
                 setPodChoice(e.target.value);
@@ -147,20 +145,11 @@ export function AdminControlCenter({
             </select>
           </div>
           <div className="lg:col-span-3">
-            <label className="mb-1 block text-xs font-medium text-gray-600">Or create a new pod (overrides the dropdown above)</label>
-            <input
-              className="w-full rounded border px-2 py-1.5 text-sm"
-              placeholder="New pod name"
-              value={newPodName}
-              onChange={(e) => setNewPodName(e.target.value)}
-            />
+            <label className="mb-1 block text-xs font-medium text-slate-600">Or create a new pod (overrides the dropdown above)</label>
+            <input className="input w-full" placeholder="New pod name" value={newPodName} onChange={(e) => setNewPodName(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <button
-              onClick={handleSubmit}
-              disabled={saving || !ownerId}
-              className="w-full rounded bg-gray-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-            >
+            <button onClick={handleSubmit} disabled={saving || !ownerId} className="btn-primary w-full">
               {saving ? "Saving..." : "Add / Update"}
             </button>
           </div>
@@ -169,21 +158,19 @@ export function AdminControlCenter({
       </div>
 
       <div className="mb-6">
-        <h2 className="mb-2 text-sm font-semibold">Team members</h2>
-        <p className="mb-2 text-xs text-gray-500">Click a team to see its SDRs and AEs.</p>
+        <h2 className="mb-2 text-sm font-semibold text-slate-900">Team members</h2>
+        <p className="mb-2 text-xs text-slate-500">Click a team to see its SDRs and AEs.</p>
         <div className="flex flex-wrap gap-2">
           {podSummaries.map(({ pod, aeCount, sdrCount }) => (
             <button
               key={pod}
               onClick={() => setExpandedPod(expandedPod === pod ? null : pod)}
-              className={`rounded-full border px-4 py-1.5 text-sm ${
-                expandedPod === pod ? "border-gray-900 bg-gray-900 text-white" : "border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100"
-              }`}
+              className={expandedPod === pod ? "pill-active" : "pill-idle"}
             >
-              {pod} <span className="opacity-70">· {aeCount} AE / {sdrCount} SDR</span>
+              {pod} <span className="opacity-80">· {aeCount} AE / {sdrCount} SDR</span>
             </button>
           ))}
-          {podSummaries.length === 0 && <p className="text-sm text-gray-400">No pods yet.</p>}
+          {podSummaries.length === 0 && <p className="text-sm text-slate-400">No pods yet.</p>}
         </div>
 
         {expandedPod &&
@@ -191,18 +178,19 @@ export function AdminControlCenter({
             const summary = podSummaries.find((p) => p.pod === expandedPod);
             if (!summary) return null;
             return (
-              <div className="mt-3 rounded-lg border bg-white p-4">
-                <div className="mb-2 text-sm font-semibold">
+              <div className="card mt-3">
+                <div className="mb-3 text-sm font-semibold text-slate-900">
                   {summary.pod} — {summary.aeCount} AE, {summary.sdrCount} SDR
                 </div>
-                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {summary.members.map((m) => (
-                    <div key={m.owner.id} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
-                      <span className="truncate">{m.owner.name}</span>
-                      <span className="ml-2 shrink-0 text-xs text-gray-500">{m.role ?? "—"}</span>
+                    <div key={m.owner.id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1.5">
+                      <Avatar id={m.owner.id} name={m.owner.name} />
+                      <span className="flex-1 truncate text-sm text-slate-800">{m.owner.name}</span>
+                      <RoleBadge role={m.role} />
                     </div>
                   ))}
-                  {summary.members.length === 0 && <p className="text-sm text-gray-400">No members.</p>}
+                  {summary.members.length === 0 && <p className="text-sm text-slate-400">No members.</p>}
                 </div>
               </div>
             );
@@ -210,37 +198,43 @@ export function AdminControlCenter({
       </div>
 
       <div className="mb-2 flex items-center gap-3">
-        <input
-          className="w-64 rounded border px-2 py-1.5 text-sm"
-          placeholder="Search people..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <span className="text-sm text-gray-500">{rows.length.toLocaleString()} people</span>
+        <input className="input w-64" placeholder="Search people..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <span className="text-sm text-slate-500">{rows.length.toLocaleString()} people</span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+      <div className="table-shell">
+        <table>
+          <thead>
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Email</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Role</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Pod</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-700">Source</th>
-              <th className="px-3 py-2" />
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Pod</th>
+              <th>Source</th>
+              <th />
             </tr>
           </thead>
           <tbody>
             {rows.map(({ owner, role: r, pod, isOverridden }) => (
-              <tr key={owner.id} className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">{owner.name}</td>
-                <td className="px-3 py-2 text-gray-500">{owner.email ?? "—"}</td>
-                <td className="px-3 py-2">{r ?? "—"}</td>
-                <td className="px-3 py-2">{pod ?? "Unassigned"}</td>
-                <td className="px-3 py-2 text-xs text-gray-500">{isOverridden ? "Custom" : r || pod ? "Roster default" : "—"}</td>
-                <td className="px-3 py-2">
-                  <button onClick={() => loadOwnerIntoForm(owner.id)} className="mr-3 text-sm text-blue-700 hover:underline">
+              <tr key={owner.id}>
+                <td>
+                  <span className="flex items-center gap-2 font-medium text-slate-900">
+                    <Avatar id={owner.id} name={owner.name} />
+                    {owner.name}
+                  </span>
+                </td>
+                <td className="text-slate-500">{owner.email ?? "—"}</td>
+                <td>
+                  <RoleBadge role={r} />
+                </td>
+                <td>{pod ?? "Unassigned"}</td>
+                <td>
+                  <span className={isOverridden ? "badge-emerald" : r || pod ? "badge-slate" : "text-xs text-slate-400"}>
+                    {isOverridden ? "Custom" : r || pod ? "Roster default" : "—"}
+                  </span>
+                </td>
+                <td>
+                  <button onClick={() => loadOwnerIntoForm(owner.id)} className="mr-3 text-sm font-medium text-indigo-600 hover:underline">
                     Edit
                   </button>
                   {isOverridden && (
@@ -253,7 +247,7 @@ export function AdminControlCenter({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
                   No people match.
                 </td>
               </tr>
