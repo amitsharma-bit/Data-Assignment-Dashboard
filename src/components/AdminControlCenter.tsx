@@ -31,6 +31,7 @@ export function AdminControlCenter({
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedPod, setExpandedPod] = useState<string | null>(null);
 
   function loadOwnerIntoForm(id: string) {
     setOwnerId(id);
@@ -61,17 +62,38 @@ export function AdminControlCenter({
     }
   }
 
+  const allResolved = useMemo(
+    () =>
+      sortedOwners.map((owner) => ({
+        owner,
+        role: roleForOwner(owner.id, ownersById, rosterOverrides),
+        pod: podForOwner(owner.id, ownersById, rosterOverrides),
+        isOverridden: Boolean(rosterOverrides[owner.id]),
+      })),
+    [sortedOwners, ownersById, rosterOverrides],
+  );
+
   const rows = useMemo(() => {
-    const all = sortedOwners.map((owner) => ({
-      owner,
-      role: roleForOwner(owner.id, ownersById, rosterOverrides),
-      pod: podForOwner(owner.id, ownersById, rosterOverrides),
-      isOverridden: Boolean(rosterOverrides[owner.id]),
-    }));
-    if (!search.trim()) return all;
+    if (!search.trim()) return allResolved;
     const needle = search.trim().toLowerCase();
-    return all.filter((r) => r.owner.name?.toLowerCase().includes(needle) || r.owner.email?.toLowerCase().includes(needle));
-  }, [sortedOwners, ownersById, rosterOverrides, search]);
+    return allResolved.filter(
+      (r) => r.owner.name?.toLowerCase().includes(needle) || r.owner.email?.toLowerCase().includes(needle),
+    );
+  }, [allResolved, search]);
+
+  const podSummaries = useMemo(
+    () =>
+      knownPods.map((pod) => {
+        const members = allResolved.filter((r) => r.pod === pod);
+        return {
+          pod,
+          members,
+          aeCount: members.filter((m) => m.role === "AE").length,
+          sdrCount: members.filter((m) => m.role === "SDR").length,
+        };
+      }),
+    [knownPods, allResolved],
+  );
 
   return (
     <div className="mx-auto max-w-5xl p-6">
@@ -144,6 +166,47 @@ export function AdminControlCenter({
           </div>
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </div>
+
+      <div className="mb-6">
+        <h2 className="mb-2 text-sm font-semibold">Team members</h2>
+        <p className="mb-2 text-xs text-gray-500">Click a team to see its SDRs and AEs.</p>
+        <div className="flex flex-wrap gap-2">
+          {podSummaries.map(({ pod, aeCount, sdrCount }) => (
+            <button
+              key={pod}
+              onClick={() => setExpandedPod(expandedPod === pod ? null : pod)}
+              className={`rounded-full border px-4 py-1.5 text-sm ${
+                expandedPod === pod ? "border-gray-900 bg-gray-900 text-white" : "border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100"
+              }`}
+            >
+              {pod} <span className="opacity-70">· {aeCount} AE / {sdrCount} SDR</span>
+            </button>
+          ))}
+          {podSummaries.length === 0 && <p className="text-sm text-gray-400">No pods yet.</p>}
+        </div>
+
+        {expandedPod &&
+          (() => {
+            const summary = podSummaries.find((p) => p.pod === expandedPod);
+            if (!summary) return null;
+            return (
+              <div className="mt-3 rounded-lg border bg-white p-4">
+                <div className="mb-2 text-sm font-semibold">
+                  {summary.pod} — {summary.aeCount} AE, {summary.sdrCount} SDR
+                </div>
+                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {summary.members.map((m) => (
+                    <div key={m.owner.id} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+                      <span className="truncate">{m.owner.name}</span>
+                      <span className="ml-2 shrink-0 text-xs text-gray-500">{m.role ?? "—"}</span>
+                    </div>
+                  ))}
+                  {summary.members.length === 0 && <p className="text-sm text-gray-400">No members.</p>}
+                </div>
+              </div>
+            );
+          })()}
       </div>
 
       <div className="mb-2 flex items-center gap-3">
