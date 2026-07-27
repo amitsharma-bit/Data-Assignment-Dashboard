@@ -4,8 +4,19 @@ import type { RosterOverride, RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { OwnerRecord, OwnerRole } from "@/lib/types";
 import { Avatar } from "./ui/Avatar";
 import { RoleBadge } from "./ui/RoleBadge";
+import { SortableHeader, toggleSort as toggleSortHelper, type SortDirection } from "./ui/SortableHeader";
 
 const UNASSIGNED = "__unassigned__";
+
+type PersonSortField = "name" | "email" | "role" | "pod" | "source";
+
+const PEOPLE_COLUMNS: { field: PersonSortField; label: string }[] = [
+  { field: "name", label: "Name" },
+  { field: "email", label: "Email" },
+  { field: "role", label: "Role" },
+  { field: "pod", label: "Pod" },
+  { field: "source", label: "Source" },
+];
 
 export function AdminControlCenter({
   owners,
@@ -34,6 +45,8 @@ export function AdminControlCenter({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedPod, setExpandedPod] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<PersonSortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   function loadOwnerIntoForm(id: string) {
     setOwnerId(id);
@@ -76,12 +89,41 @@ export function AdminControlCenter({
   );
 
   const rows = useMemo(() => {
-    if (!search.trim()) return allResolved;
-    const needle = search.trim().toLowerCase();
-    return allResolved.filter(
-      (r) => r.owner.name?.toLowerCase().includes(needle) || r.owner.email?.toLowerCase().includes(needle),
-    );
-  }, [allResolved, search]);
+    let filtered = allResolved;
+    if (search.trim()) {
+      const needle = search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (r) => r.owner.name?.toLowerCase().includes(needle) || r.owner.email?.toLowerCase().includes(needle),
+      );
+    }
+    if (!sortField) return filtered;
+    const valueOf = (r: (typeof filtered)[number]): string | null => {
+      switch (sortField) {
+        case "name":
+          return r.owner.name;
+        case "email":
+          return r.owner.email;
+        case "role":
+          return r.role;
+        case "pod":
+          return r.pod;
+        case "source":
+          return r.isOverridden ? "Custom" : r.role || r.pod ? "Roster default" : null;
+      }
+    };
+    const sorted = [...filtered].sort((a, b) => {
+      const va = valueOf(a);
+      const vb = valueOf(b);
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      return va < vb ? -1 : va > vb ? 1 : 0;
+    });
+    return sortDirection === "desc" ? sorted.reverse() : sorted;
+  }, [allResolved, search, sortField, sortDirection]);
+
+  function toggleSort(field: PersonSortField) {
+    toggleSortHelper(field, sortField, sortDirection, setSortField, setSortDirection);
+  }
 
   const podSummaries = useMemo(
     () =>
@@ -206,11 +248,16 @@ export function AdminControlCenter({
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Pod</th>
-              <th>Source</th>
+              {PEOPLE_COLUMNS.map((col) => (
+                <SortableHeader
+                  key={col.field}
+                  label={col.label}
+                  field={col.field}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              ))}
               <th />
             </tr>
           </thead>

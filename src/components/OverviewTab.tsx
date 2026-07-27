@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Leaderboard } from "./Leaderboard";
 import { CompanyDrawer } from "./CompanyDrawer";
 import { Avatar } from "./ui/Avatar";
+import { SortableHeader, toggleSort as toggleSortHelper, type SortDirection } from "./ui/SortableHeader";
 import { getDistinctPods, podForOwner, roleForOwner } from "@/lib/pods";
 import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, OwnerRole, TeamRecord } from "@/lib/types";
@@ -35,7 +36,7 @@ export function OverviewTab({
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("All");
   const [ownerFilter, setOwnerFilter] = useState("");
   const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
 
   const scopedCompanies = useMemo(
@@ -101,11 +102,7 @@ export function OverviewTab({
   }, [filtered, sortField, sortDirection, ownerMap]);
 
   function toggleSort(field: SortField) {
-    if (sortField === field) setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
+    toggleSortHelper(field, sortField, sortDirection, setSortField, setSortDirection);
   }
 
   const showTable = Boolean(selectedPod || search.trim() || ownerFilter);
@@ -159,14 +156,15 @@ export function OverviewTab({
               <thead>
                 <tr>
                   {COLUMNS.map((col) => (
-                    <th
+                    <SortableHeader
                       key={col.field}
-                      onClick={() => toggleSort(col.field)}
-                      className="w-1/5 cursor-pointer select-none hover:text-indigo-600"
-                    >
-                      {col.label}
-                      {sortField === col.field && (sortDirection === "asc" ? " ▲" : " ▼")}
-                    </th>
+                      label={col.label}
+                      field={col.field}
+                      sortField={sortField}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                      className="w-1/5"
+                    />
                   ))}
                 </tr>
               </thead>

@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { FilterBuilderGroup } from "./FilterBuilder";
 import { AssignToControl } from "./AssignToControl";
 import { CompanyDrawer } from "./CompanyDrawer";
+import { SortableHeader, toggleSort as toggleSortHelper, type SortDirection } from "./ui/SortableHeader";
 import { findSalesopsOwner } from "@/lib/salesops";
 import { groupByGD, type GDGroup } from "@/lib/gdGrouping";
-import { filterCompanies, searchCompanies } from "@/lib/filters/engine";
+import { filterCompanies, searchCompanies, sortCompanies } from "@/lib/filters/engine";
 import type { FilterGroup } from "@/lib/filters/types";
 import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
@@ -111,6 +112,32 @@ export function DataAssignmentTab({
   );
 }
 
+type GDSortField = "gdName" | "potentialRooftops" | "dealershipRank" | "gdLastActivity" | "numCarsGdLevel" | "gdStage" | "country";
+
+const GD_COLUMNS: { field: GDSortField; label: string }[] = [
+  { field: "gdName", label: "Group Name" },
+  { field: "potentialRooftops", label: "#Potential Rooftops" },
+  { field: "dealershipRank", label: "Dealership Rank" },
+  { field: "gdLastActivity", label: "GD Last Activity" },
+  { field: "numCarsGdLevel", label: "No of Cars (GD Level)" },
+  { field: "gdStage", label: "GD Stage" },
+  { field: "country", label: "Country" },
+];
+
+function sortGDGroups(groups: GDGroup[], field: GDSortField | null, direction: SortDirection): GDGroup[] {
+  if (!field) return groups;
+  const sorted = [...groups].sort((a, b) => {
+    const va = a[field];
+    const vb = b[field];
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    if (va < vb) return -1;
+    if (va > vb) return 1;
+    return 0;
+  });
+  return direction === "desc" ? sorted.reverse() : sorted;
+}
+
 function GDSection({
   pool,
   owners,
@@ -125,20 +152,26 @@ function GDSection({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterGroup>(EMPTY_FILTER);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<GDSortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const groups: GDGroup[] = useMemo(() => {
     const byFilter = filterCompanies(pool, filter);
     const filteredPool = search.trim()
       ? byFilter.filter((c) => c.gdName?.toLowerCase().includes(search.trim().toLowerCase()))
       : byFilter;
-    return groupByGD(filteredPool);
-  }, [pool, filter, search]);
+    return sortGDGroups(groupByGD(filteredPool), sortField, sortDirection);
+  }, [pool, filter, search, sortField, sortDirection]);
 
   function toggle(key: string) {
     const next = new Set(selected);
     if (next.has(key)) next.delete(key);
     else next.add(key);
     setSelected(next);
+  }
+
+  function toggleSort(field: GDSortField) {
+    toggleSortHelper(field, sortField, sortDirection, setSortField, setSortDirection);
   }
 
   const selectedCompanyIds = groups
@@ -166,13 +199,16 @@ function GDSection({
           <thead>
             <tr>
               <th className="w-8" />
-              <th>Group Name</th>
-              <th>#Potential Rooftops</th>
-              <th>Dealership Rank</th>
-              <th>GD Last Activity</th>
-              <th>No of Cars (GD Level)</th>
-              <th>GD Stage</th>
-              <th>Country</th>
+              {GD_COLUMNS.map((col) => (
+                <SortableHeader
+                  key={col.field}
+                  label={col.label}
+                  field={col.field}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -211,6 +247,31 @@ function GDSection({
   );
 }
 
+type SingleSortField =
+  | "name"
+  | "domain"
+  | "website_status"
+  | "gd_name"
+  | "number_of_used_cars"
+  | "number_of_new_cars"
+  | "total_cars"
+  | "lifecycle_stage_gd_level"
+  | "oem_s"
+  | "country";
+
+const SINGLE_COLUMNS: { field: SingleSortField; label: string }[] = [
+  { field: "name", label: "Company Name" },
+  { field: "domain", label: "Company Domain Name" },
+  { field: "website_status", label: "Website Status" },
+  { field: "gd_name", label: "GD Name" },
+  { field: "number_of_used_cars", label: "No of Used Cars" },
+  { field: "number_of_new_cars", label: "No of New Cars" },
+  { field: "total_cars", label: "Total Cars" },
+  { field: "lifecycle_stage_gd_level", label: "Lifecycle Stage (GD Level)" },
+  { field: "oem_s", label: "OEM's" },
+  { field: "country", label: "Country" },
+];
+
 function SingleSection({
   pool,
   owners,
@@ -227,20 +288,26 @@ function SingleSection({
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<SingleSortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const countryOptions = useMemo(() => distinctCountries(pool), [pool]);
 
   const visible = useMemo(() => {
     let rows = searchCompanies(pool, search);
     if (country) rows = rows.filter((c) => c.country === country);
-    return rows;
-  }, [pool, search, country]);
+    return sortCompanies(rows, sortField ?? undefined, sortDirection);
+  }, [pool, search, country, sortField, sortDirection]);
 
   function toggle(id: string) {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelected(next);
+  }
+
+  function toggleSort(field: SingleSortField) {
+    toggleSortHelper(field, sortField, sortDirection, setSortField, setSortDirection);
   }
 
   return (
@@ -268,16 +335,16 @@ function SingleSection({
           <thead>
             <tr>
               <th className="w-8" />
-              <th>Company Name</th>
-              <th>Company Domain Name</th>
-              <th>Website Status</th>
-              <th>GD Name</th>
-              <th>No of Used Cars</th>
-              <th>No of New Cars</th>
-              <th>Total Cars</th>
-              <th>Lifecycle Stage (GD Level)</th>
-              <th>OEM's</th>
-              <th>Country</th>
+              {SINGLE_COLUMNS.map((col) => (
+                <SortableHeader
+                  key={col.field}
+                  label={col.label}
+                  field={col.field}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              ))}
             </tr>
           </thead>
           <tbody>

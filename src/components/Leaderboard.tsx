@@ -11,14 +11,18 @@ interface PodStats {
   totalCompanies: number;
 }
 
-/** A Single Franchise is a company whose GD name is literally "Unknown" — not blank, a real value. */
+/**
+ * "GD Name is Unknown"/"is Known" here means HubSpot's own filter-operator
+ * sense (blank vs. has-any-value) — not the literal string "Unknown". A
+ * Single Franchise is a company whose GD name is blank ("is unknown").
+ */
 function isSingleFranchise(c: CompanyRecord): boolean {
-  return (c.gdName ?? "").trim().toLowerCase() === "unknown";
+  return !c.gdName || c.gdName.trim() === "";
 }
 
-/** Everything with a real (non-blank, non-"Unknown") GD name is a Dealership Group member. */
+/** Anything with a GD name value at all ("is Known") is a Dealership Group member. */
 function isDealershipGroupMember(c: CompanyRecord): boolean {
-  return Boolean(c.gdName) && !isSingleFranchise(c);
+  return !isSingleFranchise(c);
 }
 
 /**

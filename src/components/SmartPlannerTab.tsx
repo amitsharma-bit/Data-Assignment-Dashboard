@@ -1,12 +1,26 @@
 import { useMemo, useState } from "react";
 import { AssignToControl } from "./AssignToControl";
 import { CompanyDrawer } from "./CompanyDrawer";
+import { SortableHeader, toggleSort as toggleSortHelper, type SortDirection } from "./ui/SortableHeader";
 import { findSalesopsOwner } from "@/lib/salesops";
 import { sortCompanies } from "@/lib/filters/engine";
 import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, TeamRecord } from "@/lib/types";
 
 const EXCLUDABLE_LIFECYCLE_STAGES = ["Contract Closed", "In Pipeline"];
+
+const COLUMNS: { field: string; label: string }[] = [
+  { field: "name", label: "Company Name" },
+  { field: "domain", label: "Domain" },
+  { field: "gd_name", label: "GD Name" },
+  { field: "num_associated_contacts", label: "Contacts" },
+  { field: "number_of_used_cars", label: "Used Cars" },
+  { field: "number_of_new_cars", label: "New Cars" },
+  { field: "total_cars", label: "Total Cars" },
+  { field: "lifecycle_stage_gd_level", label: "Lifecycle (GD Level)" },
+  { field: "oem_s", label: "OEM" },
+  { field: "country", label: "Country" },
+];
 
 export function SmartPlannerTab({
   companies,
@@ -38,8 +52,8 @@ export function SmartPlannerTab({
   const [excludedStages, setExcludedStages] = useState<Set<string>>(new Set(EXCLUDABLE_LIFECYCLE_STAGES));
   const [excludeIndependentOem, setExcludeIndependentOem] = useState(true);
   const [country, setCountry] = useState(() => (countryOptions.includes("United States") ? "United States" : ""));
-  const [sortField, setSortField] = useState("num_associated_contacts");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortField, setSortField] = useState<string | null>("num_associated_contacts");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
 
@@ -52,7 +66,7 @@ export function SmartPlannerTab({
       if (country && c.country !== country) return false;
       return true;
     });
-    return sortCompanies(filtered, sortField, sortDirection);
+    return sortCompanies(filtered, sortField ?? undefined, sortDirection);
   }, [pool, minContacts, minUsedCars, excludedStages, excludeIndependentOem, country, sortField, sortDirection]);
 
   function toggleStage(stage: string) {
@@ -70,11 +84,7 @@ export function SmartPlannerTab({
   }
 
   function toggleSort(field: string) {
-    if (sortField === field) setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    else {
-      setSortField(field);
-      setSortDirection("desc");
-    }
+    toggleSortHelper(field, sortField, sortDirection, setSortField, setSortDirection);
   }
 
   function selectAllVisible() {
@@ -91,13 +101,6 @@ export function SmartPlannerTab({
       </div>
     );
   }
-
-  const sortHeader = (label: string, field: string) => (
-    <th onClick={() => toggleSort(field)} className="cursor-pointer hover:text-indigo-600">
-      {label}
-      {sortField === field && (sortDirection === "asc" ? " ▲" : " ▼")}
-    </th>
-  );
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -185,16 +188,16 @@ export function SmartPlannerTab({
           <thead>
             <tr>
               <th className="w-8" />
-              {sortHeader("Company Name", "name")}
-              <th>Domain</th>
-              <th>GD Name</th>
-              {sortHeader("Contacts", "num_associated_contacts")}
-              {sortHeader("Used Cars", "number_of_used_cars")}
-              <th>New Cars</th>
-              <th>Total Cars</th>
-              <th>Lifecycle (GD Level)</th>
-              <th>OEM</th>
-              <th>Country</th>
+              {COLUMNS.map((col) => (
+                <SortableHeader
+                  key={col.field}
+                  label={col.label}
+                  field={col.field}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              ))}
             </tr>
           </thead>
           <tbody>
