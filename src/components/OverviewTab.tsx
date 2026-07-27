@@ -7,6 +7,15 @@ import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, OwnerRole, TeamRecord } from "@/lib/types";
 
 type RoleFilter = "All" | OwnerRole;
+type SortField = "name" | "domain" | "owner" | "gdName" | "potentialRooftops";
+
+const COLUMNS: { field: SortField; label: string }[] = [
+  { field: "name", label: "Company Name" },
+  { field: "domain", label: "Company Domain Name" },
+  { field: "owner", label: "Company Owner" },
+  { field: "gdName", label: "GD Name" },
+  { field: "potentialRooftops", label: "Potential Rooftops" },
+];
 
 export function OverviewTab({
   companies,
@@ -24,6 +33,9 @@ export function OverviewTab({
   const [selectedPod, setSelectedPod] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("All");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
 
   const scopedCompanies = useMemo(
@@ -35,10 +47,21 @@ export function OverviewTab({
     [companies, selectedPod, ownerMap, rosterOverrides],
   );
 
-  const visible = useMemo(() => {
+  const ownerOptions = useMemo(() => {
+    const ids = new Set(scopedCompanies.map((c) => c.ownerId).filter((id): id is string => Boolean(id)));
+    return [...ids]
+      .map((id) => ownerMap.get(id))
+      .filter((o): o is OwnerRecord => Boolean(o?.name))
+      .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  }, [scopedCompanies, ownerMap]);
+
+  const filtered = useMemo(() => {
     let rows = scopedCompanies;
     if (roleFilter !== "All") {
       rows = rows.filter((c) => roleForOwner(c.ownerId, ownerMap, rosterOverrides) === roleFilter);
+    }
+    if (ownerFilter) {
+      rows = rows.filter((c) => c.ownerId === ownerFilter);
     }
     if (search.trim()) {
       const needle = search.trim().toLowerCase();
@@ -47,7 +70,45 @@ export function OverviewTab({
       );
     }
     return rows;
-  }, [scopedCompanies, roleFilter, search, ownerMap, rosterOverrides]);
+  }, [scopedCompanies, roleFilter, ownerFilter, search, ownerMap, rosterOverrides]);
+
+  const visible = useMemo(() => {
+    if (!sortField) return filtered;
+    const valueOf = (c: CompanyRecord): string | number | null => {
+      switch (sortField) {
+        case "name":
+          return c.name;
+        case "domain":
+          return c.domain;
+        case "owner":
+          return ownerMap.get(c.ownerId ?? "")?.name ?? c.ownerId;
+        case "gdName":
+          return c.gdName;
+        case "potentialRooftops":
+          return c.potentialRooftops;
+      }
+    };
+    const sorted = [...filtered].sort((a, b) => {
+      const va = valueOf(a);
+      const vb = valueOf(b);
+      if (va === null || va === undefined) return 1;
+      if (vb === null || vb === undefined) return -1;
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    });
+    return sortDirection === "desc" ? sorted.reverse() : sorted;
+  }, [filtered, sortField, sortDirection, ownerMap]);
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  }
+
+  const showTable = Boolean(selectedPod || search.trim() || ownerFilter);
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -69,6 +130,14 @@ export function OverviewTab({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <select className="input" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+          <option value="">All company owners</option>
+          {ownerOptions.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </select>
         <div className="segmented">
           {(["All", "SDR", "AE"] as RoleFilter[]).map((r) => (
             <button key={r} onClick={() => setRoleFilter(r)} className={roleFilter === r ? "segmented-item-active" : "segmented-item"}>
@@ -78,37 +147,42 @@ export function OverviewTab({
         </div>
       </div>
 
-      {!selectedPod && !search.trim() ? (
+      {!showTable ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-          Select a pod above, or search, to see accounts.
+          Select a pod above, or search / pick an owner, to see accounts.
         </div>
       ) : (
         <>
           <div className="mb-2 text-sm text-slate-500">{visible.length.toLocaleString()} accounts</div>
           <div className="table-shell">
-            <table>
+            <table className="table-fixed">
               <thead>
                 <tr>
-                  <th>Company Name</th>
-                  <th>Company Domain Name</th>
-                  <th>Company Owner</th>
-                  <th>GD Name</th>
-                  <th>Potential Rooftops</th>
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col.field}
+                      onClick={() => toggleSort(col.field)}
+                      className="w-1/5 cursor-pointer select-none hover:text-indigo-600"
+                    >
+                      {col.label}
+                      {sortField === col.field && (sortDirection === "asc" ? " ▲" : " ▼")}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {visible.map((c) => (
                   <tr key={c.id} className="cursor-pointer" onClick={() => setSelectedCompany(c)}>
-                    <td className="font-medium text-slate-900">{c.name ?? "—"}</td>
-                    <td>{c.domain ?? "—"}</td>
-                    <td>
+                    <td className="truncate font-medium text-slate-900">{c.name ?? "—"}</td>
+                    <td className="truncate">{c.domain ?? "—"}</td>
+                    <td className="truncate">
                       <span className="flex items-center gap-2">
                         <Avatar id={c.ownerId ?? "?"} name={ownerMap.get(c.ownerId ?? "")?.name ?? null} />
-                        {ownerMap.get(c.ownerId ?? "")?.name ?? c.ownerId ?? "—"}
+                        <span className="truncate">{ownerMap.get(c.ownerId ?? "")?.name ?? c.ownerId ?? "—"}</span>
                       </span>
                     </td>
-                    <td>{c.gdName ?? "—"}</td>
-                    <td>{c.potentialRooftops ?? "—"}</td>
+                    <td className="truncate">{c.gdName ?? "—"}</td>
+                    <td className="truncate">{c.potentialRooftops ?? "—"}</td>
                   </tr>
                 ))}
                 {visible.length === 0 && (

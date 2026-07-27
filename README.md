@@ -10,16 +10,25 @@ HubSpot to actually change Company owner. No database, no login system.
 ### Overview
 A leaderboard for the **AE Pods** (Saarthak, Neelima, Archit, Prince,
 Central, plus any pods created via Admin Control Center) — a real org
-structure that has nothing to do with HubSpot's own Teams feature. Each
-pod card shows:
-- Total Group Dealerships (distinct GDs, not raw company records)
-- Total Single Accounts
-- Total Companies — the sum of each GD's `#Potential Rooftops` plus the
-  single-account count, i.e. the real addressable footprint, not just the
-  number of HubSpot records
+structure that has nothing to do with HubSpot's own Teams feature. Pod
+cards auto-fit the row at equal width regardless of how many pods exist.
+Each pod card shows:
+- **GD** — count of distinct Dealership Groups (companies sharing a
+  `gd_id`/`gd_name` collapse into one), not raw company records
+- **SF** — count of Single Franchise companies, identified by GD name
+  literally equal to `"Unknown"` (not blank — a company with no GD name at
+  all is neither GD nor SF and isn't counted in either bucket; see
+  `src/components/Leaderboard.tsx` if that turns out to need a third
+  bucket)
+- **Total companies** — SF count + the sum of `#Potential Rooftops` across
+  each distinct GD (falling back to that GD's linked-record count only
+  when rooftops isn't filled in), i.e. the real addressable footprint, not
+  just the number of HubSpot records
 
-Click a pod card to see its accounts below, with a search box and an
-[All]/[SDR]/[AE] filter.
+Click a pod card to see its accounts below. Above the table: search,
+a **Company Owner** dropdown (scoped to whichever pod/search is active),
+and the [All]/[SDR]/[AE] role filter. Every column is sortable by clicking
+its header, and columns are fixed at equal width.
 
 Pod membership and SDR/AE role resolve in two layers: a baseline static
 roster in `src/lib/pods.ts` (matched by owner *name*, so it can go stale),

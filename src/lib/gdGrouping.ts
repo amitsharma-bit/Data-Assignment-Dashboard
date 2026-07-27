@@ -24,9 +24,17 @@ function firstNonNull<T>(values: (T | null)[]): T | null {
  * GD, taking the first non-blank value found across the group for each
  * GD-level attribute (they're expected to agree, but data entry is messy in
  * practice) and flagging "Mixed" if country genuinely disagrees.
+ *
+ * `isMember` decides which companies count as GD members before grouping —
+ * defaults to the `isGroupDealership` flag (what Data Assignment uses), but
+ * callers with a different definition of "this is a GD" (e.g. the Overview
+ * leaderboard's gd_name-based one) can pass their own.
  */
-export function groupByGD(companies: CompanyRecord[]): GDGroup[] {
-  const groupSource = companies.filter((c) => c.isGroupDealership === true);
+export function groupByGD(
+  companies: CompanyRecord[],
+  isMember: (c: CompanyRecord) => boolean = (c) => c.isGroupDealership === true,
+): GDGroup[] {
+  const groupSource = companies.filter(isMember);
   const map = new Map<string, CompanyRecord[]>();
 
   for (const c of groupSource) {

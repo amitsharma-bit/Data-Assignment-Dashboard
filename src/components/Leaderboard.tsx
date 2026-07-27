@@ -7,10 +7,25 @@ import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 interface PodStats {
   pod: string;
   gdCount: number;
-  singleCount: number;
+  sfCount: number;
   totalCompanies: number;
 }
 
+/** A Single Franchise is a company whose GD name is literally "Unknown" — not blank, a real value. */
+function isSingleFranchise(c: CompanyRecord): boolean {
+  return (c.gdName ?? "").trim().toLowerCase() === "unknown";
+}
+
+/** Everything with a real (non-blank, non-"Unknown") GD name is a Dealership Group member. */
+function isDealershipGroupMember(c: CompanyRecord): boolean {
+  return Boolean(c.gdName) && !isSingleFranchise(c);
+}
+
+/**
+ * Total Companies = Total SF + sum of #Potential Rooftops across each
+ * distinct GD (falling back to that GD's linked-record count only when
+ * potential rooftops isn't filled in, so a data gap doesn't read as zero).
+ */
 function statsForPod(
   pod: string,
   companies: CompanyRecord[],
@@ -18,16 +33,16 @@ function statsForPod(
   overrides: RosterOverrideMap,
 ): PodStats {
   const podCompanies = companies.filter((c) => podForOwner(c.ownerId, ownersById, overrides) === pod);
-  const gdGroups = groupByGD(podCompanies);
-  const singleCompanies = podCompanies.filter((c) => c.isGroupDealership !== true);
+  const gdGroups = groupByGD(podCompanies, isDealershipGroupMember);
+  const sfCompanies = podCompanies.filter(isSingleFranchise);
 
   const rooftopTotal = gdGroups.reduce((sum, g) => sum + (g.potentialRooftops ?? g.companies.length), 0);
 
   return {
     pod,
     gdCount: gdGroups.length,
-    singleCount: singleCompanies.length,
-    totalCompanies: rooftopTotal + singleCompanies.length,
+    sfCount: sfCompanies.length,
+    totalCompanies: sfCompanies.length + rooftopTotal,
   };
 }
 
@@ -52,8 +67,8 @@ export function Leaderboard({
   );
 
   return (
-    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {stats.map(({ pod, gdCount, singleCount, totalCompanies }) => {
+    <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+      {stats.map(({ pod, gdCount, sfCount, totalCompanies }) => {
         const selected = selectedPod === pod;
         return (
           <button
@@ -86,7 +101,7 @@ export function Leaderboard({
                 GD: <span className="font-medium">{gdCount}</span>
               </span>
               <span>
-                Single: <span className="font-medium">{singleCount}</span>
+                SF: <span className="font-medium">{sfCount}</span>
               </span>
             </div>
           </button>
