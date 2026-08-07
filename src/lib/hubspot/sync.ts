@@ -109,7 +109,7 @@ export async function incrementalCompanySync(
       filterGroups: [
         {
           filters: [
-            { propertyName: "hs_lastmodifieddate", operator: "GTE", value: since.getTime() },
+            { propertyName: "hs_lastmodifieddate", operator: "GTE", value: String(since.getTime()) },
           ],
         },
       ],

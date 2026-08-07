@@ -4,11 +4,13 @@ import { CompanyDrawer } from "./CompanyDrawer";
 import { Avatar } from "./ui/Avatar";
 import { SortableHeader, toggleSort as toggleSortHelper, type SortDirection } from "./ui/SortableHeader";
 import { getDistinctPods, podForOwner, roleForOwner } from "@/lib/pods";
+import { formatDate } from "@/lib/format";
 import type { RosterOverrideMap } from "@/lib/rosterOverrides";
 import type { CompanyRecord, OwnerRecord, OwnerRole, TeamRecord } from "@/lib/types";
 
 type RoleFilter = "All" | OwnerRole;
-type SortField = "name" | "domain" | "owner" | "gdName" | "potentialRooftops";
+type SortField = "name" | "domain" | "owner" | "gdName" | "potentialRooftops" | "lastActivityDate";
+type ActivityFilter = "all" | "2m" | "3m" | "4m" | "6m";
 
 const COLUMNS: { field: SortField; label: string }[] = [
   { field: "name", label: "Company Name" },
@@ -16,7 +18,27 @@ const COLUMNS: { field: SortField; label: string }[] = [
   { field: "owner", label: "Company Owner" },
   { field: "gdName", label: "GD Name" },
   { field: "potentialRooftops", label: "Potential Rooftops" },
+  { field: "lastActivityDate", label: "Last Activity Date" },
 ];
+
+const ACTIVITY_OPTIONS: { value: ActivityFilter; label: string }[] = [
+  { value: "all", label: "All Activity" },
+  { value: "2m", label: "Older than 2 Months" },
+  { value: "3m", label: "Older than 3 Months" },
+  { value: "4m", label: "Older than 4 Months" },
+  { value: "6m", label: "Older than 6 Months" },
+];
+
+const ACTIVITY_MONTHS: Record<ActivityFilter, number> = { all: 0, "2m": 2, "3m": 3, "4m": 4, "6m": 6 };
+
+function isOlderThanMonths(iso: string | null, months: number): boolean {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return false;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return t < cutoff.getTime();
+}
 
 export function OverviewTab({
   companies,
@@ -35,6 +57,8 @@ export function OverviewTab({
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("All");
   const [ownerFilter, setOwnerFilter] = useState("");
+  const [activityDraft, setActivityDraft] = useState<ActivityFilter>("all");
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
@@ -70,8 +94,11 @@ export function OverviewTab({
         (c) => c.name?.toLowerCase().includes(needle) || c.gdName?.toLowerCase().includes(needle),
       );
     }
+    if (activityFilter !== "all") {
+      rows = rows.filter((c) => isOlderThanMonths(c.lastActivityDate, ACTIVITY_MONTHS[activityFilter]));
+    }
     return rows;
-  }, [scopedCompanies, roleFilter, ownerFilter, search, ownerMap, rosterOverrides]);
+  }, [scopedCompanies, roleFilter, ownerFilter, search, activityFilter, ownerMap, rosterOverrides]);
 
   const visible = useMemo(() => {
     if (!sortField) return filtered;
@@ -87,6 +114,8 @@ export function OverviewTab({
           return c.gdName;
         case "potentialRooftops":
           return c.potentialRooftops;
+        case "lastActivityDate":
+          return c.lastActivityDate;
       }
     };
     const sorted = [...filtered].sort((a, b) => {
@@ -105,7 +134,7 @@ export function OverviewTab({
     toggleSortHelper(field, sortField, sortDirection, setSortField, setSortDirection);
   }
 
-  const showTable = Boolean(selectedPod || search.trim() || ownerFilter);
+  const showTable = Boolean(selectedPod || search.trim() || ownerFilter || activityFilter !== "all");
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -135,6 +164,25 @@ export function OverviewTab({
             </option>
           ))}
         </select>
+        <select className="input" value={activityDraft} onChange={(e) => setActivityDraft(e.target.value as ActivityFilter)}>
+          {ACTIVITY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <button className="btn-secondary" onClick={() => setActivityFilter(activityDraft)}>
+          Apply
+        </button>
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            setActivityDraft("all");
+            setActivityFilter("all");
+          }}
+        >
+          Reset
+        </button>
         <div className="segmented">
           {(["All", "SDR", "AE"] as RoleFilter[]).map((r) => (
             <button key={r} onClick={() => setRoleFilter(r)} className={roleFilter === r ? "segmented-item-active" : "segmented-item"}>
@@ -146,7 +194,7 @@ export function OverviewTab({
 
       {!showTable ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-          Select a pod above, or search / pick an owner, to see accounts.
+          Select a pod above, or search / pick an owner / apply an activity filter, to see accounts.
         </div>
       ) : (
         <>
@@ -163,7 +211,7 @@ export function OverviewTab({
                       sortField={sortField}
                       sortDirection={sortDirection}
                       onSort={toggleSort}
-                      className="w-1/5"
+                      className="w-1/6"
                     />
                   ))}
                 </tr>
@@ -181,11 +229,12 @@ export function OverviewTab({
                     </td>
                     <td className="truncate">{c.gdName ?? "—"}</td>
                     <td className="truncate">{c.potentialRooftops ?? "—"}</td>
+                    <td className="truncate">{formatDate(c.lastActivityDate)}</td>
                   </tr>
                 ))}
                 {visible.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                    <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
                       No accounts match.
                     </td>
                   </tr>

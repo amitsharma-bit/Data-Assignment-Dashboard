@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { clearAllData, getAllCompanies, getAllOwners, getAllTeams, getMeta } from "@/lib/db";
 import { runSync, type SyncProgress } from "@/lib/hubspot/sync";
 import { reassignCompanies as reassignCompaniesInHubspot } from "@/lib/hubspot/mutate";
+import { friendlyErrorMessage } from "@/lib/hubspot/proxyClient";
 import {
   loadRosterOverrides,
   removeRosterOverride as removeRosterOverrideInDb,
@@ -55,7 +56,7 @@ export function useAppData() {
         await runSync(type, setSyncProgress);
         await loadFromLocalCache();
       } catch (err) {
-        setSyncError(err instanceof Error ? err.message : "Sync failed");
+        setSyncError(friendlyErrorMessage(err, "Couldn't sync with HubSpot. Please try again in a moment."));
       } finally {
         setSyncing(false);
       }
@@ -77,7 +78,7 @@ export function useAppData() {
         await reassignCompaniesInHubspot(companyIds, newOwnerId);
         await loadFromLocalCache();
       } catch (err) {
-        setReassignError(err instanceof Error ? err.message : "Reassignment failed");
+        setReassignError(friendlyErrorMessage(err, "Couldn't update HubSpot. Please try again in a moment."));
         throw err;
       } finally {
         setReassigning(false);

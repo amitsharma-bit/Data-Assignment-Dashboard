@@ -20,6 +20,13 @@ export class ProxyUnauthorizedError extends Error {
   }
 }
 
+/** Logs the real error to the console (for debugging) and returns a clean message for the UI. */
+export function friendlyErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ProxyUnauthorizedError) return err.message;
+  console.error(err);
+  return fallback;
+}
+
 /**
  * Calls our own /api/hubspot serverless proxy (same-origin, no CORS issue)
  * instead of api.hubapi.com directly. Retries on 429/5xx with backoff since

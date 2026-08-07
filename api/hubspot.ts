@@ -73,6 +73,13 @@ export default async function handler(request: Request): Promise<Response> {
   });
 
   const text = await hubspotRes.text();
+  if (!hubspotRes.ok) {
+    // Visible in `vercel logs` / the Vercel dashboard — the client only ever sees a friendly message.
+    console.error(`HubSpot ${hubspotRes.status} on ${method} ${path}`, {
+      body,
+      response: text.slice(0, 2000),
+    });
+  }
   return new Response(text, {
     status: hubspotRes.status,
     headers: { "Content-Type": "application/json" },
